@@ -1,6 +1,4 @@
 <?php
-// Dans database/migrations/xxxx_xx_xx_xxxxxx_create_orders_table.php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -11,13 +9,13 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Lier la commande à un client
-            $table->string('status'); // Ex: 'en attente', 'payée', 'expédiée'
+            $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
+            $table->string('customer_name');
+            $table->string('customer_email');
+            $table->string('customer_phone');
+            $table->string('customer_address');
             $table->decimal('total_price', 10, 2);
-            $table->string('payment_method'); // Ex: 'paiement comptant'
-            $table->text('shipping_address');
-            $table->text('billing_address');
-            $table->text('notes')->nullable();
+            $table->string('status')->default('en cours');
             $table->timestamps();
         });
     }

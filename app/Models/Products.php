@@ -21,12 +21,20 @@ class Products extends Model
         'recommended_use',
         'technical_info',
         'quantite',
+        'promotion_price',
+        'promotion_start_date',
+        'promotion_end_date', 
     ];
 
     protected $casts = [];
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
     }
     
 }

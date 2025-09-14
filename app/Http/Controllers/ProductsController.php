@@ -4,7 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Products;
 use App\Models\Category;
+use App\Models\Order;
+use App\Models\OrderItem;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class ProductsController extends Controller
@@ -236,5 +240,69 @@ public function update(Request $request, Products $product)
 
         // Les informations techniques et les caractéristiques sont déjà gérées
         return view('products.show', compact('product', 'hexProductColors'));
+    }
+
+    public function orderForm(Products $product)
+    {
+        return view('products.order', compact('product'));
+    }
+
+    public function processOrder(Request $request, Products $product)
+    {
+        // Validation conditionnelle selon le point de livraison
+        $deliveryPoint = $request->input('delivery_point');
+        
+        $rules = [
+            'customer_name' => 'required|string|max:255',
+            'customer_email' => 'required|email|max:255',
+            'customer_phone' => 'required|string|max:20',
+            'delivery_point' => 'required|string|in:domicile,point_vente',
+            'quantity' => 'required|integer|min:1|max:100',
+            'notes' => 'nullable|string|max:1000'
+        ];
+
+        // Ajouter les règles conditionnelles pour l'adresse
+        if ($deliveryPoint === 'domicile') {
+            $rules['neighborhood'] = 'required|string|max:100';
+            $rules['customer_address'] = 'required|string|max:500';
+        } else {
+            $rules['neighborhood'] = 'nullable|string|max:100';
+            $rules['customer_address'] = 'nullable|string|max:500';
+        }
+
+        $validatedData = $request->validate($rules);
+
+        // Préparer l'adresse selon le point de livraison pour les colonnes shipping/billing
+        $deliveryAddress = '';
+        if ($validatedData['delivery_point'] === 'domicile') {
+            $deliveryAddress = $validatedData['neighborhood'] . ', ' . $validatedData['customer_address'];
+        } else {
+            $neighborhood = $validatedData['neighborhood'] ?? 'Non spécifié';
+            $deliveryAddress = 'Point de vente - ' . $neighborhood;
+        }
+
+        // Déterminer l'utilisateur: connecté ou premier utilisateur existant
+        $userId = Auth::id() ?? User::value('id');
+
+        // Créer la commande en respectant le schéma de la table `orders`
+        $order = Order::create([
+            'user_id' => $userId,
+            'status' => 'en attente',
+            'total_price' => $product->price * $validatedData['quantity'],
+            'payment_method' => 'paiement comptant',
+            'shipping_address' => $deliveryAddress,
+            'billing_address' => $deliveryAddress,
+            'notes' => $validatedData['notes'] ?? ''
+        ]);
+
+        // Créer l'article de commande en respectant le schéma de `order_items`
+        OrderItem::create([
+            'order_id' => $order->id,
+            'products_id' => $product->id,
+            'quantity' => $validatedData['quantity'],
+            'unit_price' => $product->price
+        ]);
+
+        return redirect()->back()->with('success', 'Votre commande a été enregistrée avec succès ! Nous vous contacterons bientôt.');
     }
 }

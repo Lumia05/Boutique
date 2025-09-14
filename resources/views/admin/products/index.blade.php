@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="d-flex justify-content-between align-items-center mb-4">
-    
+
         <a href="{{ route('admin.products.create') }}" class="btn btn-danger">Ajouter un produit</a>
     </div>
 
@@ -22,6 +22,7 @@
                     <thead class="bg-danger text-white">
                         <tr>
                             <th scope="col">Nom</th>
+                            <th scope="col">Image</th>
                             <th scope="col">Référence</th>
                             <th scope="col">Catégorie</th>
                             <th scope="col">Prix</th>
@@ -33,19 +34,27 @@
                         @foreach ($products as $product)
                             <tr>
                                 <td>{{ $product->name }}</td>
+                                <td>
+                                    @if($product->image)
+                                        <img src="{{ asset($product->image) }}" alt="{{ $product->name }}" style="width: 50px; height: 50px; object-fit: cover;">
+                                    @else
+                                        <span class="text-muted">N/A</span>
+                                    @endif
+                                </td>
                                 <td>{{ $product->reference }}</td>
                                 <td>{{ $product->category->name }}</td>
                                 <td>{{ number_format($product->price, 2) }} FCFA</td>
                                 <td>{{ $product->quantite }}</td>
                                 <td class="text-center">
                                     <div class="d-flex justify-content-center">
-                                        <button type="button" class="btn btn-warning btn-sm me-2" data-bs-toggle="modal" data-bs-target="#editProductModal" data-product-id="{{ $product->id }}">
+                                        <button class="btn btn-warning me-2" data-bs-toggle="modal" data-bs-target="#editProductModal" data-url="{{ route('admin.products.edit', $product->id) }}">
                                             Modifier
                                         </button>
+                                        
                                         <form action="{{ route('admin.products.destroy', $product) }}" method="POST" class="d-inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')">Supprimer</button>
+                                            <button type="submit" class="btn btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')">Supprimer</button>
                                         </form>
                                     </div>
                                 </td>
@@ -86,7 +95,7 @@
         var editProductModal = document.getElementById('editProductModal');
         editProductModal.addEventListener('show.bs.modal', function (event) {
             var button = event.relatedTarget;
-            var productId = button.getAttribute('data-product-id');
+            var url = button.getAttribute('data-url');
 
             var modalBody = editProductModal.querySelector('.modal-body');
             modalBody.innerHTML = `
@@ -97,8 +106,13 @@
                 </div>
             `;
 
-            fetch(`/admin/products/${productId}/edit-modal`)
-                .then(response => response.text())
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text();
+                })
                 .then(html => {
                     modalBody.innerHTML = html;
                 })

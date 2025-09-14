@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Products;
-use App\Models\ProductsVariant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -47,6 +46,8 @@ class ProductController extends Controller
         'features' => 'nullable|string',
         'recommended_use' => 'nullable|string',
         'technical_info' => 'nullable|string',
+        'price' => 'required|numeric',
+        'quantite' => 'required|numeric',
     ]);
 
     if ($request->hasFile('image')) {
@@ -71,22 +72,6 @@ class ProductController extends Controller
             'variants.*.quantite' => 'required|integer|min:0',
         ]);
 
-        foreach ($request->variants as $variantData) {
-            ProductsVariant::create([
-                'product_id' => $product->id,
-                'size' => $variantData['size'],
-                'price' => $variantData['price'],
-                'quantite' => $variantData['quantite'],
-            ]);
-        }
-    } else {
-        // C'est un produit simple, nous créons une seule variante par défaut
-        ProductsVariant::create([
-            'product_id' => $product->id,
-            'size' => 'Taille unique', // Ou un autre libellé par défaut
-            'price' => $request->input('price', 0), // Assurez-vous d'avoir ce champ dans le formulaire
-            'quantite' => $request->input('quantite', 0), // Assurez-vous d'avoir ce champ dans le formulaire
-        ]);
     }
 
     return redirect()->route('admin.products.index')->with('success', 'Produit créé avec succès.');
@@ -99,86 +84,7 @@ class ProductController extends Controller
     {
         return view('admin.products.show', compact('product'));
     }
-
-    /**
-     * Affiche le formulaire pour modifier un produit existant.
-     */
-    public function edit(Products $product)
-    {
-        $categories = Category::all();
-          $product->load('variants'); // Chargement des variantes associées
-        return view('admin.products.edit', compact('product', 'categories'));
-    }
-    public function editModal(Products $product)
-    {
-        $categories = Category::all();
-        return view('admin.products.edit_modal_content', compact('product', 'categories'));
-    }
-
-    /**
-     * Met à jour un produit existant dans la base de données.
-     */
-   public function update(Request $request, Products $product)
-{
-    // 1. Validez les données du produit parent
-    $validatedData = $request->validate([
-        'name' => 'required|string|max:255',
-        'reference' => ['nullable', 'string', 'max:255', Rule::unique('products')->ignore($product->id)],
-        'description' => 'nullable|string',
-        'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        'category_id' => 'required|exists:categories,id',
-        'color' => 'nullable|string|max:255',
-        'features' => 'nullable|string',
-        'recommended_use' => 'nullable|string',
-        'technical_info' => 'nullable|string',
-    ]);
-
-    // 2. Traitez l'image si elle est mise à jour
-    if ($request->hasFile('image')) {
-        if ($product->image && Storage::disk('public')->exists(str_replace('storage/', '', $product->image))) {
-            Storage::disk('public')->delete(str_replace('storage/', '', $product->image));
-        }
-        $imagePath = $request->file('image')->store('images', 'public');
-        $validatedData['image'] = 'storage/' . $imagePath;
-    }
-
-    // 3. Mettez à jour le produit parent
-    $product->update($validatedData);
-
-    // 4. Gérez la synchronisation des variantes
-    $submittedVariants = collect($request->input('variants', []));
-    $existingVariantIds = $product->variants->pluck('id');
-    
-    // Identifiez les variantes à supprimer (celles qui ne sont plus dans le formulaire)
-    $variantsToDelete = $existingVariantIds->diff($submittedVariants->pluck('id'));
-    if ($variantsToDelete->isNotEmpty()) {
-        $product->variants()->whereIn('id', $variantsToDelete)->delete();
-    }
-    
-    // Mettez à jour les variantes existantes et créez les nouvelles
-    foreach ($submittedVariants as $variantData) {
-        if (isset($variantData['id'])) {
-            // C'est une variante existante, on la met à jour
-            $variant = $product->variants()->find($variantData['id']);
-            if ($variant) {
-                $variant->update([
-                    'size' => $variantData['size'],
-                    'price' => $variantData['price'],
-                    'quantite' => $variantData['quantite'],
-                ]);
-            }
-        } else {
-            // C'est une nouvelle variante, on la crée
-            $product->variants()->create([
-                'size' => $variantData['size'],
-                'price' => $variantData['price'],
-                'quantite' => $variantData['quantite'],
-            ]);
-        }
-    }
-
-    return redirect()->route('admin.products.index')->with('success', 'Produit mis à jour avec succès.');
-}
+  
 
     /**
      * Supprime un produit de la base de données.
@@ -194,4 +100,58 @@ class ProductController extends Controller
         return redirect()->route('admin.products.index')->with('success', 'Produit supprimé avec succès.');
     }
     
+    /**
+     * Affiche le formulaire de modification d'un produit.
+     * @param  Product  $product
+     * @return \Illuminate\View\View
+     */
+    public function edit(Products $product)
+    {
+        return view('admin.products.edit', compact('product'));
+    }
+
+    /**
+     * Met à jour un produit dans la base de données.
+     * @param  \Illuminate\Http\Request  $request
+     * @param  Product  $product
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function update(Request $request, Products $product)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'price' => 'required|numeric|min:0',
+            'quantite' => 'required|integer|min:0',
+            'description' => 'nullable|string',
+            'technical_info' => 'nullable|string',
+            'hex_colors' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'promotion_price' => 'nullable|numeric|min:0',
+            'promotion_start_date' => 'nullable|date',
+            'promotion_end_date' => 'nullable|date|after_or_equal:promotion_start_date',
+        ]);
+    
+        // Mettre à jour les champs existants
+        $product->name = $request->input('name');
+        $product->price = $request->input('price');
+        $product->quantite = $request->input('quantite');
+        $product->description = $request->input('description');
+        $product->technical_info = $request->input('technical_info');
+        $product->color = $request->input('hex_colors');
+    
+        // Gérer les nouveaux champs de promotion
+        $product->promotion_price = $request->input('promotion_price');
+        $product->promotion_start_date = $request->input('promotion_start_date');
+        $product->promotion_end_date = $request->input('promotion_end_date');
+    
+        if ($request->hasFile('image')) {
+            // Logique pour sauvegarder la nouvelle image
+            $imagePath = $request->file('image')->store('products', 'public');
+            $product->image = 'storage/' . $imagePath;
+        }
+    
+        $product->save();
+    
+        return redirect()->route('admin.products.index')->with('success', 'Produit mis à jour avec succès !');
+    }
 }

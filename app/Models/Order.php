@@ -4,22 +4,33 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Order extends Model
 {
     use HasFactory;
 
-    protected $guarded = []; // Pour simplifier, permet la modification de toutes les colonnes
-
-    // Une commande appartient à un client (User)
-    public function user()
+    protected $fillable = [
+        'customer_id',
+        'total_price',
+        'status',
+        'address',
+    ];
+    
+    /**
+     * Get the customer that owns the order.
+     */
+    public function customer(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Customer::class);
     }
 
-    // Une commande a plusieurs produits de commande
-    public function items()
+    /**
+     * Get the order items for the order.
+     */
+    public function ordersItems(): HasMany
     {
-        return $this->hasMany(OrderItem::class);
+        return $this->hasMany(OrdersItems::class);
     }
 }

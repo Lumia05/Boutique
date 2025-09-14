@@ -16,6 +16,17 @@
                 {{-- <a href="/nouveautes" class="text-gray-700 hover:text-red-600 transition duration-300">Nouveautés</a> --}}
                 <a href="/a-propos" class="text-gray-700 hover:text-red-600 transition duration-300">À propos</a>
                 <a href="/contact" class="text-gray-700 hover:text-red-600 transition duration-300">Contact</a>
+                <a href="/panier" class="relative text-gray-700 hover:text-red-600">
+                    Panier
+                        @php
+                            $cartCount = array_sum(array_column(Session::get('cart', []), 'quantity'));
+                        @endphp
+                        @if($cartCount > 0)
+                            <span class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                                {{ $cartCount }}
+                            </span>
+                        @endif
+                </a>
             </nav>
             <div class="flex items-center space-x-4">
                 <form action="/produits" method="GET" class="relative hidden md:block">

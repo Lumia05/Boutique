@@ -32,7 +32,14 @@
                                 <td class="text-center">{{ $category->products_count }}</td>
                                 <td class="text-center">
                                     <div class="d-flex justify-content-center">
-                                        <a href="{{ route('admin.categories.edit', $category) }}" class="btn btn-warning btn-sm me-2">Modifier</a>
+                                        <button 
+                                            type="button"
+                                            class="btn btn-warning btn-sm me-2"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#editCategoryModal"
+                                            data-category-id="{{ $category->id }}">
+                                            Modifier
+                                        </button>
                                         <form action="{{ route('admin.categories.destroy', $category) }}" method="POST" class="d-inline">
                                             @csrf
                                             @method('DELETE')
