@@ -1,13 +1,11 @@
 <?php
-
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Products;
-use App\Models\OrdersItems;
-use App\Models\Customer;
+use App\Models\OrderItem;
+use Illuminate\Http\Request;
 use Carbon\Carbon;
 
 class CheckoutController extends Controller
@@ -46,7 +44,7 @@ class CheckoutController extends Controller
      */
     public function process(Request $request)
     {
-        $request->validate([
+         $request->validate([
             'customer_name' => 'required|string|max:255',
             'customer_email' => 'required|email|max:255',
             'customer_phone' => 'nullable|string|max:255',
@@ -94,7 +92,7 @@ class CheckoutController extends Controller
 
             // 3. Sauvegarde des articles
             foreach ($orderItems as $item) {
-                $orderItem = new OrdersItems($item);
+                $orderItem = new OrderItem($item);
                 $orderItem->order_id = $order->id;
                 $orderItem->save();
             }
