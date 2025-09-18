@@ -8,11 +8,73 @@ use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $categories = Category::withCount('products')->paginate(10); 
-        
-        return view('admin.categories.index', compact('categories'));
+        $search = trim((string) $request->input('q', ''));
+
+        $query = Category::query()
+            ->withCount('products')
+            ->with('parent');
+
+        if ($search !== '') {
+            $variants = $this->generateSearchVariants($search);
+            $query->where(function ($q) use ($variants) {
+                foreach ($variants as $term) {
+                    $q->orWhereRaw('LOWER(name) LIKE ?', ['%' . strtolower($term) . '%'])
+                      ->orWhereHas('parent', function ($q2) use ($term) {
+                          $q2->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($term) . '%']);
+                      });
+                }
+            });
+        }
+
+        $categories = $query->paginate(10)->appends(['q' => $search]);
+
+        return view('admin.categories.index', compact('categories', 'search'));
+    }
+
+    private function generateSearchVariants(string $input): array
+    {
+        $input = trim($input);
+        if ($input === '') {
+            return [];
+        }
+
+        $l = mb_strtolower($input);
+        $variants = [$input, $l];
+
+        // Pluriels FR courants
+        // 1) s <-> Ø
+        if (str_ends_with($l, 's')) {
+            $variants[] = mb_substr($l, 0, -1);
+        } else {
+            $variants[] = $l . 's';
+        }
+
+        // 2) x <-> Ø (ex: bijoux <-> bijou)
+        if (str_ends_with($l, 'x')) {
+            $variants[] = mb_substr($l, 0, -1);
+        } else {
+            $variants[] = $l . 'x';
+        }
+
+        // 3) -al <-> -aux (ex: animal/animaux)
+        if (str_ends_with($l, 'al')) {
+            $variants[] = mb_substr($l, 0, -2) . 'aux';
+        }
+        if (str_ends_with($l, 'aux')) {
+            $variants[] = mb_substr($l, 0, -3) . 'al';
+        }
+
+        // 4) -eau <-> -eaux (ex: bateau/bateaux)
+        if (str_ends_with($l, 'eau')) {
+            $variants[] = $l . 'x'; // eaux
+        }
+        if (str_ends_with($l, 'eaux')) {
+            $variants[] = mb_substr($l, 0, -1); // eau
+        }
+
+        return array_values(array_unique($variants));
     }
 
     public function create()

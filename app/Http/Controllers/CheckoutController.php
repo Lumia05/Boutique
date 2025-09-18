@@ -46,9 +46,9 @@ class CheckoutController extends Controller
     {
          $request->validate([
             'customer_name' => 'required|string|max:255',
-            'customer_email' => 'required|email|max:255',
+            'customer_surname' => 'required|string|max:255',
             'customer_phone' => 'nullable|string|max:255',
-            'shipping_address' => 'required|string',
+            // 'shipping_address' => 'required|string',
         ]);
         
         $cart = session()->get('cart', []);
@@ -59,7 +59,7 @@ class CheckoutController extends Controller
         try {
             // 1. Cherche un client existant ou en crée un nouveau
             $customer = Customer::firstOrCreate(
-                ['email' => $request->input('customer_email')],
+                ['surname' => $request->input('customer_surnanme')],
                 [
                     'name' => $request->input('customer_name'),
                     'phone' => $request->input('customer_phone'),

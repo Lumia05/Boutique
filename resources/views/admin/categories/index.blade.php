@@ -5,6 +5,13 @@
 @section('content')
     <div class="d-flex justify-content-between align-items-center mb-4">
         <a href="{{ route('admin.categories.create') }}" class="btn btn-danger">Ajouter une catégorie</a>
+        <form method="GET" action="{{ route('admin.categories.index') }}" class="d-flex" style="gap:.5rem;">
+            <input type="text" name="q" value="{{ $search ?? '' }}" class="form-control" placeholder="Rechercher (nom ou parent)" />
+            <button type="submit" class="btn btn-outline-danger">Rechercher</button>
+            @if(!empty($search ?? ''))
+                <a href="{{ route('admin.categories.index') }}" class="btn btn-outline-secondary">Réinitialiser</a>
+            @endif
+        </form>
     </div>
 
     @if (session('success'))
@@ -28,7 +35,12 @@
                     <tbody>
                         @foreach ($categories as $category)
                             <tr>
-                                <td>{{ $category->name }}</td>
+                                <td>
+                                    {{ $category->name }}
+                                    @if($category->parent)
+                                        <small class="text-muted d-block">Parent: {{ $category->parent->name }}</small>
+                                    @endif
+                                </td>
                                 <td class="text-center">{{ $category->products_count }}</td>
                                 <td class="text-center">
                                     <div class="d-flex justify-content-center">
@@ -56,7 +68,7 @@
     </div>
     
     <div class="d-flex justify-content-center mt-4">
-        {{ $categories->links('pagination::bootstrap-5') }}
+        {{ $categories->withQueryString()->links('pagination::bootstrap-5') }}
     </div>
 
         <div class="modal fade" id="editCategoryModal" tabindex="-1" aria-labelledby="editCategoryModalLabel" aria-hidden="true">

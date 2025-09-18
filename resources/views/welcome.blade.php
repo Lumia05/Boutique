@@ -21,7 +21,7 @@
 
             <nav class="hidden md:flex space-x-6 text-lg">
                 <a href="/produits" class="text-gray-700 hover:text-red-600 transition duration-300">Produits</a>
-                <a href="/nos réalisations" class="text-gray-700 hover:text-red-600 transition duration-300">Nos réalisations</a>
+                <a href="{{ route('realisations.index') }}" class="text-gray-700 hover:text-red-600 transition duration-300">Nos réalisations</a>
                 <a href="/a-propos" class="text-gray-700 hover:text-red-600 transition duration-300">À propos</a>
                 <a href="/contact" class="text-gray-700 hover:text-red-600 transition duration-300">Contact</a>
             </nav>

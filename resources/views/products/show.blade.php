@@ -114,7 +114,7 @@
                     <div class="flex items-center space-x-4">
                          <label for="quantity" class="text-gray-700 font-semibold">Quantité :</label>
                          <input type="number" name="quantity" id="quantity" value="1" min="1" max="{{ $product->quantite }}" class="border border-gray-300 rounded-lg py-2 px-4 w-24 text-center focus:outline-none focus:ring-2 focus:ring-red-500">
-                         <button type="submit" class="bg-red-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-red-700 transition duration-300">
+                         <button type="submit" class="bg-green-500 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-green-500 transition duration-300">
                             Ajouter au panier
                         </button>
                     </div>

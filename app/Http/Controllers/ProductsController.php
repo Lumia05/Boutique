@@ -47,10 +47,22 @@ class ProductsController extends Controller
             }
         }
 
-        // Logique de recherche par mot-clé
+        // Logique de recherche par mot-clé (nom, description, catégorie, parent)
         if ($searchQuery) {
-            $query->where('name', 'like', '%' . $searchQuery . '%')
-                  ->orWhere('description', 'like', '%' . $searchQuery . '%');
+            $variants = $this->generateSearchVariants($searchQuery);
+            $query->where(function ($w) use ($variants) {
+                foreach ($variants as $term) {
+                    $lt = strtolower($term);
+                    $w->orWhereRaw('LOWER(name) LIKE ?', ['%' . $lt . '%'])
+                      ->orWhereRaw('LOWER(description) LIKE ?', ['%' . $lt . '%'])
+                      ->orWhereHas('category', function ($qc) use ($lt) {
+                          $qc->whereRaw('LOWER(name) LIKE ?', ['%' . $lt . '%'])
+                             ->orWhereHas('parent', function ($qp) use ($lt) {
+                                 $qp->whereRaw('LOWER(name) LIKE ?', ['%' . $lt . '%']);
+                             });
+                      });
+                }
+            });
         }
 
         $products = $query->get(); // Exécute la requête finale
@@ -81,6 +93,49 @@ class ProductsController extends Controller
 
     return redirect()->route('admin.products.index')->with('success', 'Produit créé avec succès.');
 }
+
+    private function generateSearchVariants(string $input): array
+    {
+        $input = trim($input);
+        if ($input === '') {
+            return [];
+        }
+
+        $l = mb_strtolower($input);
+        $variants = [$input, $l];
+
+        // s <-> Ø
+        if (str_ends_with($l, 's')) {
+            $variants[] = mb_substr($l, 0, -1);
+        } else {
+            $variants[] = $l . 's';
+        }
+
+        // x <-> Ø (bijou/bijoux)
+        if (str_ends_with($l, 'x')) {
+            $variants[] = mb_substr($l, 0, -1);
+        } else {
+            $variants[] = $l . 'x';
+        }
+
+        // -al <-> -aux
+        if (str_ends_with($l, 'al')) {
+            $variants[] = mb_substr($l, 0, -2) . 'aux';
+        }
+        if (str_ends_with($l, 'aux')) {
+            $variants[] = mb_substr($l, 0, -3) . 'al';
+        }
+
+        // -eau <-> -eaux
+        if (str_ends_with($l, 'eau')) {
+            $variants[] = $l . 'x';
+        }
+        if (str_ends_with($l, 'eaux')) {
+            $variants[] = mb_substr($l, 0, -1);
+        }
+
+        return array_values(array_unique($variants));
+    }
 
 /**
  * Met à jour un produit existant dans la base de données.
@@ -120,7 +175,7 @@ public function update(Request $request, Products $product)
     'crème' => '#FFFDD0',
     'ivoire' => '#FFFFF0',
     'beige' => '#F5F5DC',
-    'rouge bordeau' => '#800000',
+    'rouge bordeaux' => '#800000',
     'noir' => '#000000',
     'gris' => '#808080',
     'gris foncé' => '#A9A9A9',

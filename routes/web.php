@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 
 //Les routes
 Route::get('/', [HomeController::class, 'index']);
+Route::get('/realisations', [HomeController::class, 'realisations'])->name('realisations.index');
 Route::get('/produits', [ProductsController::class, 'index']);
 Route::get('/produits/{product}', [ProductsController::class, 'show'])->name('products.show');
 Route::get('/produits/{product}/commander', [ProductsController::class, 'orderForm'])->name('products.order');

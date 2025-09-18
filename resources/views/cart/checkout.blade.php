@@ -44,24 +44,35 @@
             <form action="{{ route('checkout.process') }}" method="POST">
                 @csrf
                 <div class="mb-4">
-                    <label for="customer_name" class="block text-gray-700 text-sm font-bold mb-2">Nom complet</label>
+                    <label for="customer_name" class="block text-gray-700 text-sm font-bold mb-2">Nom </label>
                     <input type="text" id="customer_name" name="customer_name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
                 </div>
                 <div class="mb-4">
-                    <label for="customer_email" class="block text-gray-700 text-sm font-bold mb-2">Adresse email</label>
-                    <input type="email" id="customer_email" name="customer_email" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+                    <label for="customer_email" class="block text-gray-700 text-sm font-bold mb-2">Prénom</label>
+                    <input type="surname" id="customer_surname" name="customer_surname" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
                 </div>
                 <div class="mb-4">
                     <label for="customer_phone" class="block text-gray-700 text-sm font-bold mb-2">Numéro de téléphone</label>
                     <input type="tel" id="customer_phone" name="customer_phone" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
                 </div>
-                <div class="mb-6">
-                    <label for="customer_address" class="block text-gray-700 text-sm font-bold mb-2">Adresse de livraison</label>
-                    <textarea id="customer_address" name="customer_address" rows="4" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required></textarea>
+                
+                <div class="mb-4">
+                    <label for="delivery_option" class="block text-gray-700 text-sm font-bold mb-2">Souhaitez-vous être livré ?</label>
+                    <div class="mt-2">
+                        <label class="inline-flex items-center">
+                            <input type="radio" class="form-radio text-red-600" name="delivery_option" value="yes" required>
+                            <span class="ml-2 text-gray-700">Oui</span>
+                        </label>
+                        <label class="inline-flex items-center ml-6">
+                            <input type="radio" class="form-radio text-red-600" name="delivery_option" value="no" required>
+                            <span class="ml-2 text-gray-700">Non</span>
+                        </label>
+                    </div>
                 </div>
+                
                 <div class="flex items-center justify-between">
-                    <button type="submit" class="bg-red-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-red-700 transition duration-300 text-lg w-full">
-                        Soumettre la commande
+                    <button type="submit" class="bg-green-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-green-700 transition duration-300 text-lg w-full">
+                        Acheter
                     </button>
                 </div>
             </form>
