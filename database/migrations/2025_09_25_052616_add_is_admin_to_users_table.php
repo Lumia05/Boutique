@@ -1,5 +1,4 @@
 <?php
-// Dans database/migrations/xxxx_xx_xx_xxxxxx_add_role_to_users_table.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -10,15 +9,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            // 'admin' par défaut. 'client' pour les utilisateurs qui ne sont pas administrateurs
-            $table->string('role')->default('client')->after('password');
+            // Ajoute la colonne booléenne 'is_admin', par défaut à 'false' (client)
+            $table->boolean('is_admin')->default(false)->after('email'); 
         });
     }
 
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('role');
+            $table->dropColumn('is_admin');
         });
     }
 };

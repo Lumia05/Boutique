@@ -1,9 +1,12 @@
 <?php
+// app/Models/Product.php
 
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Products extends Model
 {
@@ -11,30 +14,26 @@ class Products extends Model
 
     protected $fillable = [
         'name',
-        'description',
         'reference',
-        'price',
-        'image',
+        'description',
         'category_id',
-        'color',
         'features',
-        'recommended_use',
+        'image',
         'technical_info',
-        'quantite',
-        'promotion_price',
-        'promotion_start_date',
-        'promotion_end_date', 
     ];
 
-    protected $casts = [];
-    public function category()
+    protected $casts = [
+        'features' => 'array',
+    ];
+
+    public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
     }
-
-    public function orderItems()
-    {
-        return $this->hasMany(OrderItem::class);
-    }
     
+    public function variants(): HasMany
+    {
+        // Laravel déduira automatiquement que la clé étrangère est "product_id"
+        return $this->hasMany(ProductVariant::class);
+    }
 }

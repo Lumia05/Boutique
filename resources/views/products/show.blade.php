@@ -6,6 +6,29 @@
     <title>{{ $product->name }} - Global Retail Business</title>
     @vite('resources/css/app.css')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+gbL0oN3wDA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        /* Styles pour les sélections de variantes */
+        .variant-option {
+            border-width: 2px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border-color: #d1d5db; /* gray-300 */
+        }
+        .variant-option:hover {
+            border-color: #ef4444; /* red-500 */
+        }
+        .variant-option.selected {
+            border-color: #ef4444; /* red-500 */
+            box-shadow: 0 0 0 3px #fef2f2; /* red-50 */
+        }
+        
+        /* Style pour les cercles de couleur */
+        .color-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+    </style>
 </head>
 <body class="font-sans antialiased text-gray-800 bg-gray-100">
 
@@ -51,119 +74,214 @@
 <main class="container mx-auto mt-4 px-6 py-8 bg-white shadow-lg rounded-lg">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <div class="w-full flex justify-center items-center">
-            {{-- Image du produit - Taille réduite --}}
             <img src="{{ asset($product->image ?? 'default-image.jpg') }}" alt="{{ $product->name }}" class="max-w-full h-96 object-contain rounded-lg shadow-xl">
         </div>
 
         <div>
             <h1 class="text-4xl font-extrabold text-gray-900 mb-2">{{ $product->name }}</h1>
             
-            <div class="product-price">
-                @php
-                    // On s'assure que les dates de promotion existent et sont valides avant de les utiliser
-                    $isPromotionActive = (!is_null($product->promotion_start_date) &&
-                                        !is_null($product->promotion_end_date)) &&
-                                        (\Carbon\Carbon::parse($product->promotion_start_date)->isPast() &&
-                                        \Carbon\Carbon::parse($product->promotion_end_date)->isFuture()) &&
-                                        \Carbon\Carbon::now()->between(\Carbon\Carbon::parse($product->promotion_start_date), \Carbon\Carbon::parse($product->promotion_end_date));
-                                        
-                @endphp
+            <form id="product-form" action="{{ route('cart.add', ['product' => $product->id]) }}" method="POST">
+                @csrf
+                <div class="product-info-container">
+                    <div class="mb-4">
+                        <p id="variant-price" class="text-3xl font-bold text-red-600 mb-2">
+                           Sélectionnez une variante
+                        </p>
+                        <p id="variant-stock" class="text-sm text-gray-500"></p>
+                    </div>
 
-                @if($isPromotionActive)
-                    <p class="text-xl text-gray-500 line-through mb-1">
-                        {{ number_format($product->price, 2, ',', ' ') }} FCFA
-                    </p>
-                    <p class="text-3xl font-bold text-red-600 mb-2">
-                        {{ number_format($product->promotion_price, 2, ',', ' ') }} FCFA
-                    </p>
-                    <p class="text-sm text-green-600 font-semibold mb-4">
-                        Offre valable du {{ \Carbon\Carbon::parse($product->promotion_start_date)->isoFormat('LL') }}
-                        au {{ \Carbon\Carbon::parse($product->promotion_end_date)->isoFormat('LL') }}
-                    </p>
-                @else
-                    <p class="text-3xl font-bold text-red-600 mb-6">
-                        {{ number_format($product->price, 2, ',', ' ') }} FCFA
-                    </p>
-                @endif
-            </div>
+                    @php
+                        $availableColors = $product->variants->pluck('color')->unique()->filter()->values();
+                        $availableSizes = $product->variants->pluck('size')->unique()->filter()->values();
+                        $availableWeights = $product->variants->pluck('weight')->unique()->filter()->values();
+                        
+                        // Mappage des noms de couleurs en français vers les codes hexadécimaux
+                        $colorMap = [
+                            'rouge' => '#ef4444', 'bleu' => '#3b82f6', 'vert' => '#22c55e', 
+                            'jaune' => '#facc15', 'noir' => '#000000', 'blanc' => '#ffffff', 
+                            'gris' => '#6b7280', 'marron' => '#7a3b00', 'violet' => '#8b5cf6', 
+                            'orange' => '#f97316', 'bleu-ciel' => '#7dd3fc'
+                        ];
+                    @endphp
 
-            <h2 class="text-xl font-bold text-red-600 mb-2">Description du produit</h2>
+                    @if($availableColors->count() > 0)
+                        <div class="mb-6">
+                            <label class="block text-gray-700 font-semibold mb-2">Couleur :</label>
+                            <div id="color-options" class="flex flex-wrap gap-3">
+                                @foreach($availableColors as $color)
+                                    <div class="color-circle variant-option" 
+                                         data-attribute="color" 
+                                         data-value="{{ $color }}" 
+                                         style="background-color: {{ $colorMap[strtolower($color)] ?? $color }};">
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if($availableWeights->count() > 0)
+                        <div class="mb-6">
+                            <label class="block text-gray-700 font-semibold mb-2">Poids :</label>
+                            <div id="weight-options" class="flex flex-wrap gap-2">
+                                @foreach($availableWeights as $weight)
+                                    <div class="variant-option border-2 rounded-lg px-4 py-2 text-sm font-medium" 
+                                         data-attribute="weight" 
+                                         data-value="{{ $weight }}">
+                                         {{ $weight }}
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if($availableSizes->count() > 0)
+                        <div class="mb-6">
+                            <label class="block text-gray-700 font-semibold mb-2">Taille :</label>
+                            <div id="size-options" class="flex flex-wrap gap-2">
+                                @foreach($availableSizes as $size)
+                                    <div class="variant-option border-2 rounded-lg px-4 py-2 text-sm font-medium" 
+                                         data-attribute="size" 
+                                         data-value="{{ $size }}">
+                                         {{ $size }}
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                    
+                    <div class="flex items-center space-x-4 mb-6 mt-6">
+                        <label for="quantity" class="text-gray-700 font-semibold">Quantité :</label>
+                        <input type="number" name="quantity" id="quantity" value="1" min="1" max="100" class="border border-gray-300 rounded-lg py-2 px-4 w-24 text-center focus:outline-none focus:ring-2 focus:ring-red-500" disabled>
+                    </div>
+
+                    <input type="hidden" name="variant_id" id="variant-id">
+                    <button type="submit" id="add-to-cart-btn" class="bg-red-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-red-700 transition duration-300" disabled>
+                        Ajouter au panier
+                    </button>
+                </div>
+            </form>
+
+            <h2 class="text-xl font-bold text-red-600 mb-2 mt-8">Description du produit</h2>
             <p class="text-gray-700 mb-6 leading-relaxed">{{ $product->description }}</p>
 
-            @if(isset($product->features))
-                <h2 class="text-xl font-bold text-red-600 mb-2">Caractéristiques du produit</h2>
-                <ul class="list-disc list-inside space-y-2 text-gray-700">
-                    @php
-                        $features = explode('|', $product->features);
-                    @endphp
-                    @foreach($features as $feature)
-                        <li>{{ $feature }}</li>
-                    @endforeach
-                </ul>
-            @endif
-
-            @if(isset($product->recommended_use))
-            <h2 class="text-xl font-bold text-red-600 mt-6 mb-2">Usage recommandé</h2>
-            <p class="text-gray-700 mb-6 leading-relaxed">{{ $product->recommended_use }}</p>
-            @endif
-
-            <div class="flex items-center justify-between">
-                @if(isset($product->quantite) && $product->quantite > 0)
-                <form action="{{ route('cart.add', $product->id) }}" method="POST">
-                    @csrf
-                    <div class="flex items-center space-x-4">
-                         <label for="quantity" class="text-gray-700 font-semibold">Quantité :</label>
-                         <input type="number" name="quantity" id="quantity" value="1" min="1" max="{{ $product->quantite }}" class="border border-gray-300 rounded-lg py-2 px-4 w-24 text-center focus:outline-none focus:ring-2 focus:ring-red-500">
-                         <button type="submit" class="bg-green-500 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-green-500 transition duration-300">
-                            Ajouter au panier
-                        </button>
-                    </div>
-                </form>
-                @else
-                    <p class="text-red-600 font-bold">Stock épuisé.</p>
-                @endif
-            </div>
-        </div>
-    </div>
-
-    <div class="mt-12">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-                @if(isset($product->technical_info))
-                    <h3 class="font-bold text-2xl text-gray-800 mb-4">Informations techniques et de sécurité</h3>
-                    <ul class="space-y-4 text-gray-700">
-                        @php
-                            $technicalInfo = explode('|', $product->technical_info);
-                        @endphp
-                        @foreach($technicalInfo as $info)
-                            @php
-                                $info = trim($info);
-                                $parts = explode(': ', $info, 2);
-                            @endphp
-                            @if(count($parts) >= 2)
-                                <li><strong>{{ $parts[0] }} :</strong> {{ $parts[1] }}</li>
-                            @endif
-                        @endforeach
-                    </ul>
-                @endif
-            </div>
-            <div>
-                <h3 class="font-bold text-2xl text-gray-800 mb-4">Couleurs disponibles</h3>
-                <div class="flex flex-wrap gap-2">
-                     @forelse(explode(',', $product->color ?? '') as $couleur)
-                        <div class="w-12 h-12 rounded-full border-2 border-gray-300 shadow-md" style="background-color: {{trim($couleur) }};"></div>
-                    @empty
-                        <p class="text-gray-500">Aucune couleur disponible pour le moment.</p>
-                    @endforelse
-                </div>
+            <div class="mt-12">
+                <h3 class="font-bold text-2xl text-gray-800 mb-4">Informations techniques et de sécurité</h3>
+                <p class="text-gray-700 mb-6 leading-relaxed">{{ $product->technical_info }}</p>
             </div>
         </div>
     </div>
 </main>
+<footer class="bg-gray-800 text-white text-center py-6 mt-12">
+    <p>&copy; 2025 Global Retail Business. Tous droits réservés.</p>
+</footer>
 
-    <footer class="bg-gray-800 text-white text-center py-6 mt-12">
-        <p>&copy; 2025 Global Retail Business. Tous droits réservés.</p>
-    </footer>
+<script>
+    const variants = @json($product->variants);
+    const priceDisplay = document.getElementById('variant-price');
+    const stockDisplay = document.getElementById('variant-stock');
+    const quantityInput = document.getElementById('quantity');
+    const addToCartBtn = document.getElementById('add-to-cart-btn');
+    const variantIdInput = document.getElementById('variant-id');
+    const form = document.getElementById('product-form');
 
-</body>
-</html>
+    // État actuel des sélections
+    let selectedAttributes = {
+        color: null,
+        size: null,
+        weight: null
+    };
+
+    // Éléments du DOM pour chaque type de variante
+    const attributeContainers = {
+        color: document.getElementById('color-options'),
+        size: document.getElementById('size-options'),
+        weight: document.getElementById('weight-options'),
+    };
+
+    function updateUI() {
+        const selectedCount = Object.values(selectedAttributes).filter(Boolean).length;
+        const totalOptionalAttributes = Object.keys(attributeContainers).filter(key => attributeContainers[key]).length;
+
+        // On cherche une variante qui correspond aux sélections actuelles
+        let exactVariant = variants.find(variant => {
+            return (selectedAttributes.color === null || variant.color === selectedAttributes.color) &&
+                   (selectedAttributes.size === null || variant.size === selectedAttributes.size) &&
+                   (selectedAttributes.weight === null || variant.weight === selectedAttributes.weight);
+        });
+
+        // Mettre à jour l'affichage du prix, du stock et l'état du bouton
+        if (exactVariant && exactVariant.stock > 0 && selectedCount === totalOptionalAttributes) {
+            const price = exactVariant.promotion_price || exactVariant.price;
+            priceDisplay.innerHTML = `
+                <p class="text-3xl font-bold text-red-600 mb-2">${price.toLocaleString('fr-FR')} FCFA</p>
+                ${exactVariant.promotion_price ? `<p class="text-xl text-gray-500 line-through mb-1">${exactVariant.price.toLocaleString('fr-FR')} FCFA</p>` : ''}
+            `;
+            stockDisplay.textContent = `Stock disponible: ${exactVariant.stock}`;
+            quantityInput.max = exactVariant.stock;
+            quantityInput.disabled = false;
+            addToCartBtn.disabled = false;
+            variantIdInput.value = exactVariant.id;
+        } else {
+            priceDisplay.textContent = 'Sélectionnez une variante';
+            stockDisplay.textContent = '';
+            quantityInput.disabled = true;
+            addToCartBtn.disabled = true;
+            variantIdInput.value = '';
+        }
+
+        // Mettre à jour l'état des options pour les rendre cliquables ou non
+        Object.keys(attributeContainers).forEach(attr => {
+            if (attributeContainers[attr]) {
+                updateOptionAvailability(attr);
+            }
+        });
+    }
+
+    function updateOptionAvailability(currentAttribute) {
+        const container = attributeContainers[currentAttribute];
+        if (!container) return;
+
+        container.querySelectorAll('.variant-option').forEach(option => {
+            const tempSelected = { ...selectedAttributes, [currentAttribute]: option.dataset.value };
+            
+            const isAvailable = variants.some(variant =>
+                (tempSelected.color === null || variant.color === tempSelected.color) &&
+                (tempSelected.size === null || variant.size === tempSelected.size) &&
+                (tempSelected.weight === null || variant.weight === tempSelected.weight)
+            );
+
+            if (isAvailable) {
+                option.classList.remove('opacity-50', 'pointer-events-none');
+            } else {
+                option.classList.add('opacity-50', 'pointer-events-none');
+            }
+        });
+    }
+
+    function handleOptionClick(event) {
+        const selectedElement = event.currentTarget;
+        const attribute = selectedElement.dataset.attribute;
+        const value = selectedElement.dataset.value;
+
+        // Toggle la sélection
+        if (selectedAttributes[attribute] === value) {
+            selectedAttributes[attribute] = null;
+            selectedElement.classList.remove('selected');
+        } else {
+            const groupOptions = document.querySelectorAll(`[data-attribute="${attribute}"]`);
+            groupOptions.forEach(option => option.classList.remove('selected'));
+            selectedAttributes[attribute] = value;
+            selectedElement.classList.add('selected');
+        }
+
+        updateUI();
+    }
+
+    // Attacher les écouteurs d'événements
+    document.querySelectorAll('.variant-option').forEach(option => {
+        option.addEventListener('click', handleOptionClick);
+    });
+
+    // Appel initial pour définir l'état de la page
+    updateUI();
+</script>

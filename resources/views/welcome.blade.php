@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Global Retail Business - Équipements de Sécurité</title>
     @vite('resources/css/app.css')
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+gbL0oN3wDA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
         .hero-bg {
             background-image: url('https://picsum.photos/seed/construction/1600/900');
@@ -25,48 +26,111 @@
                 <a href="/a-propos" class="text-gray-700 hover:text-red-600 transition duration-300">À propos</a>
                 <a href="/contact" class="text-gray-700 hover:text-red-600 transition duration-300">Contact</a>
             </nav>
-
             <div class="flex items-center space-x-4">
-                <div class="relative hidden md:block">
-                    <input type="text" placeholder="Rechercher..." class="border border-gray-300 rounded-full py-2 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm">
-                    <button class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-600">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    </button>
-                </div>
-                <button class="md:hidden text-gray-600 hover:text-red-600">
-                    <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                </button>
+                <a href="/panier" class="relative text-gray-700 hover:text-red-600 transition duration-300">
+                    <i class="fa fa-shopping-cart text-2xl"></i>
+                    <span class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">0</span>
+                </a>
             </div>
         </div>
     </header>
 
-    <div class="hero-bg relative h-[500px] flex items-center justify-center text-center">
-        <div class="absolute inset-0 bg-black opacity-50"></div>
-        <div class="relative z-10 text-white p-6 md:p-12">
-            <h1 class="text-4xl md:text-6xl font-extrabold mb-4 drop-shadow-lg">Global Retail Business</h1>
-            <p class="text-lg md:text-xl max-w-2xl mx-auto drop-shadow-md">
-                Votre partenaire de confiance en équipements et services professionnels. Nous fournissons des solutions de sécurité et de productivité de haute qualité pour les chantiers, les industries et les professionnels.
-            </p>
-            <a href="/produits" class="mt-8 inline-block bg-red-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-red-700 transition duration-300">
-                Découvrir nos produits
-            </a>
+    <main class="container mx-auto px-6 py-8">
+        <div class="hero-bg text-white text-center py-20 px-6 rounded-lg shadow-lg">
+            <h1 class="text-5xl font-extrabold leading-tight mb-4">Équipements de Sécurité et Matériaux de Construction</h1>
+            <p class="text-xl mb-8">Votre partenaire de confiance pour des projets réussis. <br>Qualité, durabilité et sécurité sont notre priorité.</p>
+            <a href="/produits" class="bg-red-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-red-700 transition duration-300 text-lg">Découvrir nos produits</a>
         </div>
-    </div>
 
-    <main class="container mx-auto mt-8 px-6">
-        <h2 class="text-3xl font-bold text-center mb-8">Nos produits phares</h2>
+        <section class="mt-12 text-center">
+            <h2 class="text-4xl font-bold text-gray-800 mb-2">Nos Catégories</h2>
+            <p class="text-gray-600 text-lg">Découvrez nos produits par catégorie.</p>
+            <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <a href="#" class="block bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 transform hover:scale-105">
+                    <img src="https://picsum.photos/seed/peinture/400/300" alt="Peinture" class="w-full h-48 object-cover rounded-t-lg">
+                    <div class="p-4">
+                        <h3 class="font-bold text-xl text-gray-800">Peinture</h3>
+                        <p class="text-sm text-gray-600 mt-1">Éclat et protection pour tous vos murs.</p>
+                    </div>
+                </a>
+                <a href="#" class="block bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 transform hover:scale-105">
+                    <img src="https://picsum.photos/seed/casque/400/300" alt="Casque" class="w-full h-48 object-cover rounded-t-lg">
+                    <div class="p-4">
+                        <h3 class="font-bold text-xl text-gray-800">Casque</h3>
+                        <p class="text-sm text-gray-600 mt-1">Sécurité avant tout sur les chantiers.</p>
+                    </div>
+                </a>
+                <a href="#" class="block bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 transform hover:scale-105">
+                    <img src="https://picsum.photos/seed/gants/400/300" alt="Gants" class="w-full h-48 object-cover rounded-t-lg">
+                    <div class="p-4">
+                        <h3 class="font-bold text-xl text-gray-800">Gants</h3>
+                        <p class="text-sm text-gray-600 mt-1">Protection optimale pour vos mains.</p>
+                    </div>
+                </a>
+                <a href="#" class="block bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 transform hover:scale-105">
+                    <img src="https://picsum.photos/seed/membrane/400/300" alt="Membranes" class="w-full h-48 object-cover rounded-t-lg">
+                    <div class="p-4">
+                        <h3 class="font-bold text-xl text-gray-800">Membranes</h3>
+                        <p class="text-sm text-gray-600 mt-1">Étanchéité et durabilité pour vos toits.</p>
+                    </div>
+                </a>
+            </div>
+        </section>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div class="mt-12 text-center">
+            <h2 class="text-4xl font-bold text-gray-800 mb-2">Nos Produits Phares</h2>
+            <p class="text-gray-600 text-lg">Découvrez nos produits les plus populaires et les mieux notés.</p>
+        </div>
+        
+        <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             @if($products->count())
                 @foreach($products as $product)
                     <div class="bg-white rounded-lg shadow-md overflow-hidden relative group border-t-4 border-red-600">
-                        <img src="{{ $product->image }}" alt="{{ $product->name }}" class="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300">
+                        <a href="{{ route('products.show', $product->id) }}">
+                            <img src="{{ asset($product->image) }}" alt="{{ $product->name }}" class="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300">
+                        </a>
                         <div class="p-4">
-                            <h3 class="font-bold text-xl mb-1 text-gray-800">{{ $product->name }}</h3>
+                            <a href="{{ route('products.show', $product->id) }}">
+                                <h3 class="font-bold text-xl mb-1 text-gray-800">{{ $product->name }}</h3>
+                            </a>
+                            
                             <p class="text-gray-600 text-sm">{{ Str::limit($product->description, 70) }}</p>
-                            <div class="mt-3 flex justify-between items-center">
-                                <span class="text-2xl font-bold text-red-600">{{ number_format($product->price, 2, ',', ' ') }} FCFA</span>
+
+                            <div class="mt-3">
+                                @php
+                                    $hasPromotion = false;
+                                    $minPrice = $product->variants->min('price');
+                                    $maxPrice = $product->variants->max('price');
+                                    
+                                    $minPromoPrice = $product->variants->whereNotNull('promotion_price')->min('promotion_price');
+                                    
+                                    if ($minPromoPrice && $minPromoPrice < $minPrice) {
+                                        $hasPromotion = true;
+                                    }
+                                @endphp
+
+                                @if($hasPromotion)
+                                    <span class="text-xs font-semibold text-white bg-red-600 px-2 py-1 rounded-full absolute top-2 right-2">Promo</span>
+                                    <p class="text-2xl font-bold text-red-600">
+                                        À partir de {{ number_format($minPromoPrice, 0, ',', '.') }} FCFA
+                                    </p>
+                                    <p class="text-sm text-gray-500 line-through">
+                                        Au lieu de {{ number_format($minPrice, 0, ',', '.') }} FCFA
+                                    </p>
+                                @else
+                                    <p class="text-2xl font-bold text-gray-800">
+                                        @if($minPrice === $maxPrice)
+                                            {{ number_format($minPrice, 0, ',', '.') }} FCFA
+                                        @else
+                                            À partir de {{ number_format($minPrice, 0, ',', '.') }} FCFA
+                                        @endif
+                                    </p>
+                                @endif
                             </div>
+
+                            <a href="{{ route('products.show', $product->id) }}" class="mt-4 block w-full text-center bg-red-600 text-white font-bold py-2 rounded-full shadow-lg hover:bg-red-700 transition duration-300">
+                                Voir les options
+                            </a>
                         </div>
                     </div>
                 @endforeach

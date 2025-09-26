@@ -8,17 +8,17 @@ use Illuminate\Support\Facades\Auth;
 
 class LoginController extends Controller
 {
-    /**
-     * Affiche le formulaire de connexion.
-     */
+    // Affiche le formulaire de connexion
     public function showLoginForm()
     {
-        return view('auth.login');
+        // Si l'utilisateur est déjà connecté, on le redirige directement vers l'admin
+        if (Auth::check()) {
+            return redirect('/admin');
+        }
+        return view('auth.login'); 
     }
 
-    /**
-     * Gère la tentative de connexion de l'utilisateur.
-     */
+    // Gère la tentative de connexion et vérifie le rôle
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -26,33 +26,36 @@ class LoginController extends Controller
             'password' => 'required',
         ]);
 
+        // Tente de connecter l'utilisateur
         if (Auth::attempt($credentials)) {
-            $request->session()->regenerate();
+            $user = Auth::user();
 
-            // Vérifier si l'utilisateur est un administrateur
-            if (Auth::user()->role === 'admin') {
-                return redirect()->intended(route('admin.dashboard'));
+            // Vérifie si l'utilisateur est un administrateur
+            if ($user->is_admin) {
+                $request->session()->regenerate();
+                // Redirection vers le tableau de bord admin
+                return redirect()->intended('/admin'); 
             }
 
-            // Redirection par défaut pour les clients
-            return redirect()->intended('/');
+            // Si l'utilisateur n'est PAS admin
+            Auth::logout(); // Déconnexion immédiate
+            return back()->withErrors([
+                'email' => 'Accès non autorisé : vous devez être administrateur.',
+            ])->onlyInput('email');
         }
 
+        // Échec des identifiants
         return back()->withErrors([
-            'email' => 'Les identifiants fournis ne correspondent pas à nos enregistrements.',
+            'email' => 'Identifiants ou mot de passe incorrects.',
         ])->onlyInput('email');
     }
-    
-    /**
-     * Déconnecte l'utilisateur.
-     */
+
+    // Gère la déconnexion
     public function logout(Request $request)
     {
         Auth::logout();
-        
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        
-        return redirect('login');
+        return redirect('/');
     }
 }

@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\Category;
-use App\Models\Products;
 use Illuminate\Database\Seeder;
+use App\Models\Products;
+use App\Models\Category;
 
 class ProductsSeeder extends Seeder
 {
@@ -13,41 +13,41 @@ class ProductsSeeder extends Seeder
      */
     public function run(): void
     {
-        // Récupération des IDs des catégories créées par le CategorySeeder
-        $casqueId = Category::where('name', 'Casque')->first()->id;
-        $peintureId = Category::where('name', 'Vernis')->first()->id;
+        $vernis = Category::where('slug', 'Vernis')->firstOrFail();
+        $primaireMembrane = Category::where('slug', 'primaire-15kg')->firstOrFail();
+        $gants = Category::where('slug', 'gants')->firstOrFail();
+        $casque = Category::where('slug', 'casque')->firstOrFail();
 
-        // Création des produits et attribution de leur category_id
+        // Produit 1 : Peinture liée à une sous-catégorie
         Products::create([
-            'name' => 'PC Portable XPS 15',
-            'description' => 'Un ordinateur portable puissant pour la Productsivité et la création de contenu.',
-            'price' => 1500.00,
-            'image' => 'images/xps-15.png',
-            'category_id' => $casqueId
+            'name' => 'Peinture Acrylique Murale',
+            'reference' => 'PA-001',
+            'description' => 'Peinture acrylique mate pour murs et plafonds.',
+            'category_id' => $vernis->id,
         ]);
 
+        // Produit 2 : Membrane liée à une sous-catégorie
         Products::create([
-            'name' => 'Livre sur Laravel',
-            'description' => 'Apprenez à développer des applications web avec le framework Laravel.',
-            'price' => 35.50,
-            'image' => 'images/laravel-book.png',
-            'category_id' => $peintureId
+            'name' => 'Membrane Primaire d\'Étanchéité',
+            'reference' => 'MP-001',
+            'description' => 'Sous-couche bitumineuse pour toiture.',
+            'category_id' => $primaireMembrane->id,
         ]);
 
+        // Produit 3 : Gants de protection
         Products::create([
-            'name' => 'Casque de chantier Pro',
-            'description' => 'Casque de sécurité haute résistance en polyéthylène, avec ventilation et ajustement rapide. Idéal pour tous les travaux de construction et d\'industrie.',
-            'reference' => 'CAS-PR-001',
-            'price' => 45.50,
-            'image' => 'images/casque-pro.png',
-            'category_id' => 1, // Remplacez par le bon ID de catégorie
-            'color' => 'rouge,blanc,bleu',
-            
-            'features' => 'Coque en polyéthylène HD|Harnais textile 6 points|Molette de serrage pour ajustement rapide',
-            'recommended_use' => 'Protection de la tête sur les chantiers de construction, dans l\'industrie et les travaux publics.',
-            'technical_info' => 'Norme: EN 397:2012 + A1:2012|Poids: 400g|Couleur: Blanc|Durée de vie: 5 ans',
-            'quantite'=>15
+            'name' => 'Gants de Sécurité',
+            'reference' => 'GS-001',
+            'description' => 'Gants de travail résistants aux coupures et aux abrasions.',
+            'category_id' => $gants->id,
         ]);
-        // Vous pouvez ajouter d'autres produits ici
+
+        // Produit 4 : Casque
+        Products::create([
+            'name' => 'Casque de Chantier',
+            'reference' => 'CC-001',
+            'description' => 'Casque de protection pour les travaux de construction.',
+            'category_id' => $casque->id,
+        ]);
     }
 }

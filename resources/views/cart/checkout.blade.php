@@ -1,87 +1,135 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Passer à la Caisse - Global Retail Business</title>
-    @vite('resources/css/app.css')
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+gbL0oN3wDA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-</head>
-<body class="font-sans antialiased text-gray-800 bg-gray-100">
+@extends('layouts.cart')
 
-    <header class="bg-white shadow-md">
-        <div class="container mx-auto px-6 py-4 flex items-center justify-between">
-            <a href="/" class="text-3xl font-extrabold text-red-600">Global Retail Business</a>
-            <nav class="hidden md:flex space-x-6 text-lg">
-                <a href="/produits" class="text-gray-700 hover:text-red-600 transition duration-300">Produits</a>
-                <a href="/a-propos" class="text-gray-700 hover:text-red-600 transition duration-300">À propos</a>
-                <a href="/contact" class="text-gray-700 hover:text-red-600 transition duration-300">Contact</a>
-            </nav>
-            <div class="flex items-center space-x-4">
-                <div class="relative hidden md:block">
-                    <input type="text" placeholder="Rechercher..." class="border border-gray-300 rounded-full py-2 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm">
-                    <button class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-600">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    </button>
-                </div>
-                <button class="md:hidden text-gray-600 hover:text-red-600">
-                    <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                </button>
-                <a href="{{ route('cart.index') }}" class="relative text-gray-600 hover:text-red-600">
-                    <i class="fas fa-shopping-cart text-2xl"></i>
-                    <span class="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                        {{ Session::has('cart') ? count(Session::get('cart')) : 0 }}
-                    </span>
-                </a>
-            </div>
+@section('title', 'Confirmation de la Commande')
+
+@section('content')
+<main class="container mx-auto mt-4 px-6 py-8">
+    <h1 class="text-4xl font-extrabold text-gray-900 mb-6">Confirmer la Commande</h1>
+
+    @if ($errors->any())
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <strong class="font-bold">Erreur de validation !</strong>
+            <ul class="mt-2 list-disc list-inside">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
         </div>
-    </header>
+    @endif
 
-    <main class="container mx-auto px-6 py-8">
-        <h1 class="text-4xl font-bold text-gray-800 mb-6 text-center">Informations de livraison</h1>
-        
-        <div class="bg-white shadow-lg rounded-lg p-8 max-w-lg mx-auto">
-            <form action="{{ route('checkout.process') }}" method="POST">
-                @csrf
-                <div class="mb-4">
-                    <label for="customer_name" class="block text-gray-700 text-sm font-bold mb-2">Nom </label>
-                    <input type="text" id="customer_name" name="customer_name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+    @php
+        $total=0;
+        foreach($cart as $item){
+            $total += ($item['promotion_price'] ?? $item['price']) * $item['quantity'];
+        }
+    @endphp
+
+    <div class="bg-white shadow-lg rounded-lg p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Récapitulatif de la Commande</h2>
+        <div class="border-b border-gray-200 pb-4 mb-4">
+            @foreach($cart as $item)
+                <div class="flex items-center justify-between py-2">
+                    <div class="flex items-center space-x-4">
+                        <img src="{{ asset($item['image']) }}" alt="{{ $item['name'] }}" class="w-16 h-16 object-cover rounded-lg">
+                        <div>
+                            <p class="font-medium text-gray-900">{{ $item['name'] }}</p>
+                            <p class="text-sm text-gray-500">
+                                Quantité : {{ $item['quantity'] }}
+                                @if(isset($item['color'])) - {{ $item['color'] }}@endif
+                                @if(isset($item['size'])) - {{ $item['size'] }}@endif
+                            </p>
+                        </div>
+                    </div>
+                    <div>
+                        @if(isset($item['promotion_price']) && $item['promotion_price'] !== null)
+                            <p class="font-bold text-red-600">{{ number_format($item['promotion_price'] * $item['quantity'], 0, ',', '.') }} FCFA</p>
+                        @else
+                            <p class="font-bold text-gray-800">{{ number_format($item['price'] * $item['quantity'], 0, ',', '.') }} FCFA</p>
+                        @endif
+                    </div>
                 </div>
-                <div class="mb-4">
-                    <label for="customer_email" class="block text-gray-700 text-sm font-bold mb-2">Prénom</label>
-                    <input type="surname" id="customer_surname" name="customer_surname" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+            @endforeach
+        </div>
+        <div class="flex justify-end items-center text-xl font-bold text-gray-900">
+            <span>Total : {{ number_format($total, 0, ',', '.') }} FCFA</span>
+        </div>
+    </div>
+    
+    <div class="bg-white shadow-lg rounded-lg p-6 mt-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Informations de Facturation & Livraison</h2>
+        <form action="{{ route('checkout.process') }}" method="POST">
+            @csrf
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Nom complet</label>
+                    <input type="text" name="name" id="name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm" required>
                 </div>
-                <div class="mb-4">
-                    <label for="customer_phone" class="block text-gray-700 text-sm font-bold mb-2">Numéro de téléphone</label>
-                    <input type="tel" id="customer_phone" name="customer_phone" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">Adresse e-mail</label>
+                    <input type="email" name="email" id="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm">
                 </div>
-                
-                <div class="mb-4">
-                    <label for="delivery_option" class="block text-gray-700 text-sm font-bold mb-2">Souhaitez-vous être livré ?</label>
-                    <div class="mt-2">
-                        <label class="inline-flex items-center">
-                            <input type="radio" class="form-radio text-red-600" name="delivery_option" value="yes" required>
-                            <span class="ml-2 text-gray-700">Oui</span>
+                <div>
+                    <label for="phone" class="block text-sm font-medium text-gray-700">Numéro de téléphone</label>
+                    <input type="tel" name="phone" id="phone" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm" required>
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <h3 class="text-lg font-medium text-gray-900">Option de livraison</h3>
+                <div class="mt-2 space-y-4">
+                    <div class="flex items-center">
+                        <input id="delivery-home" name="delivery_option" type="radio" value="home" class="focus:ring-red-500 h-4 w-4 text-red-600 border-gray-300" required>
+                        <label for="delivery-home" class="ml-3 block text-sm font-medium text-gray-700">
+                            Livraison à domicile (+2000 FCFA)
                         </label>
-                        <label class="inline-flex items-center ml-6">
-                            <input type="radio" class="form-radio text-red-600" name="delivery_option" value="no" required>
-                            <span class="ml-2 text-gray-700">Non</span>
+                    </div>
+                    <div class="flex items-center">
+                        <input id="delivery-store" name="delivery_option" type="radio" value="store" class="focus:ring-red-500 h-4 w-4 text-red-600 border-gray-300" required>
+                        <label for="delivery-store" class="ml-3 block text-sm font-medium text-gray-700">
+                            Retrait en magasin (Gratuit)
                         </label>
                     </div>
                 </div>
-                
-                <div class="flex items-center justify-between">
-                    <button type="submit" class="bg-green-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-green-700 transition duration-300 text-lg w-full">
-                        Acheter
-                    </button>
+            </div>
+
+            <div id="delivery-address-container" class="mt-6 hidden">
+                <h3 class="text-lg font-medium text-gray-900">Adresse de livraison</h3>
+                <div class="mt-2 grid grid-cols-1 gap-6">
+                    <div>
+                        <label for="address" class="block text-sm font-medium text-gray-700">Adresse</label>
+                        <input type="text" name="address" id="address" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm">
+                    </div>
                 </div>
-            </form>
-        </div>
-    </main>
+            </div>
+            
+            <div class="mt-6">
+                <button type="submit" class="w-full bg-red-600 text-white font-bold py-3 rounded-full hover:bg-red-700 transition duration-300">
+                    Finaliser la Commande
+                </button>
+            </div>
+        </form>
+    </div>
+</main>
 
-    <footer class="bg-gray-800 text-white text-center py-6 mt-12">
-        <p>&copy; 2025 Global Retail Business. Tous droits réservés.</p>
-    </footer>
+<script>
+    const deliveryHome = document.getElementById('delivery-home');
+    const deliveryStore = document.getElementById('delivery-store');
+    const deliveryAddressContainer = document.getElementById('delivery-address-container');
+    const addressInput = document.getElementById('address');
 
-</body>
-</html>
+    function toggleAddressFields() {
+        if (deliveryHome.checked) {
+            deliveryAddressContainer.classList.remove('hidden');
+            addressInput.setAttribute('required', 'required');
+        } else {
+            deliveryAddressContainer.classList.add('hidden');
+            addressInput.removeAttribute('required');
+        }
+    }
+
+    deliveryHome.addEventListener('change', toggleAddressFields);
+    deliveryStore.addEventListener('change', toggleAddressFields);
+
+    toggleAddressFields();
+</script>
+@endsection

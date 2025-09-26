@@ -13,7 +13,6 @@
             <a href="/" class="text-3xl font-extrabold text-red-600">Global Retail Business</a>
             <nav class="hidden md:flex space-x-6 text-lg">
                 <a href="/produits" class="text-gray-700 hover:text-red-600 transition duration-300">Produits</a>
-                {{-- <a href="/nouveautes" class="text-gray-700 hover:text-red-600 transition duration-300">Nouveautés</a> --}}
                 <a href="/a-propos" class="text-gray-700 hover:text-red-600 transition duration-300">À propos</a>
                 <a href="/contact" class="text-gray-700 hover:text-red-600 transition duration-300">Contact</a>
                 <a href="/panier" class="relative text-gray-700 hover:text-red-600">
@@ -35,74 +34,100 @@
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     </button>
                 </form>
+            </div>
         </div>
     </header>
 
     <div class="container mx-auto mt-8 px-6 flex flex-col md:flex-row gap-8">
 
-    <aside class="w-full md:w-1/4 bg-white p-6 shadow-md rounded-lg">
-    <h2 class="text-2xl font-bold mb-6 text-red-600">Catégories</h2>
-    <ul>
-        <li class="mb-2">
-            <a href="/produits" class="block py-2 px-3 rounded-md @if(!$selectedCategoryId) bg-red-100 font-bold text-red-600 @else text-gray-700 hover:bg-gray-100 @endif transition-colors duration-200">
-                Toutes les catégories
-            </a>
-        </li>
+        <aside class="w-full md:w-1/4 bg-white p-6 shadow-md rounded-lg">
+            <h2 class="text-2xl font-bold mb-6 text-red-600">Catégories</h2>
+            <ul>
+                <li class="mb-2">
+                    <a href="/produits" class="block py-2 px-3 rounded-md @if(!$selectedCategoryId) bg-red-100 font-bold text-red-600 @else text-gray-700 hover:bg-gray-100 @endif transition-colors duration-200 flex justify-between items-center">
+                        <span>Toutes les catégories</span>
+                    </a>
+                </li>
+                @foreach ($categories as $category)
+                    <li class="mb-2">
+                        <a href="/produits?category_id={{ $category->id }}" 
+                           class="block py-2 px-3 rounded-md flex justify-between items-center transition-colors duration-200 
+                           @if($selectedCategoryId == $category->id) bg-red-100 font-bold text-red-600 @else text-gray-700 hover:bg-gray-100 @endif"
+                           @if($category->children->count())
+                               onclick="event.preventDefault(); toggleSubcategories(this);"
+                           @endif>
+                            <span>{{ $category->name }}</span>
+                            <span class="bg-gray-200 text-gray-600 text-xs font-semibold px-2 py-1 rounded-full">{{ $category->products_count }}</span>
+                            @if($category->children->count())
+                            <svg class="w-4 h-4 transform transition-transform duration-300" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                            @endif
+                        </a>
+                        
+                        @if($category->children->count())
+                            <ul class="pl-4 mt-2 space-y-2 overflow-hidden transition-all duration-300" data-subcategories>
+                                @foreach($category->children as $child)
+                                    <li class="mb-1">
+                                        <a href="/produits?category_id={{ $child->id }}" class="block py-1 px-3 text-sm rounded-md transition-colors duration-200 flex justify-between items-center
+                                        @if($selectedCategoryId == $child->id) bg-red-100 font-bold text-red-600 @else text-gray-600 hover:bg-gray-100 @endif">
+                                            <span>{{ $child->name }}</span>
+                                            <span class="bg-gray-200 text-gray-600 text-xs font-semibold px-2 py-1 rounded-full">{{ $child->products_count }}</span>
+                                        </a>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+        </aside>
 
-        @foreach ($categories as $category)
-            <li class="mb-2">
-                <a href="/produits?category_id={{ $category->id }}" 
-                   class="block py-2 px-3 rounded-md flex justify-between items-center transition-colors duration-200 
-                   @if($selectedCategoryId == $category->id) bg-red-100 font-bold text-red-600 @else text-gray-700 hover:bg-gray-100 @endif"
-                   @if($category->children->count())
-                       onclick="event.preventDefault(); toggleSubcategories(this);"
-                   @endif>
-                    <span>{{ $category->name }}</span>
-                    @if($category->children->count())
-                    <svg class="w-4 h-4 transform transition-transform duration-300" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                    </svg>
-                    @endif
-                </a>
-                
-                @if($category->children->count())
-                    <ul class="pl-4 mt-2 space-y-2 overflow-hidden transition-all duration-300" data-subcategories>
-                        @foreach($category->children as $child)
-                            <li class="mb-1">
-                                <a href="/produits?category_id={{ $child->id }}" class="block py-1 px-3 text-sm rounded-md transition-colors duration-200
-                                @if($selectedCategoryId == $child->id) bg-red-100 font-bold text-red-600 @else text-gray-600 hover:bg-gray-100 @endif">
-                                    {{ $child->name }}
+        <div class="flex-1">
+            <h2 class="text-3xl font-bold text-center mb-6">{{ $contentTitle }}</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                @forelse($products as $product)
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden relative group">
+                        @php
+                            $isPromotionActive = $product->promotion_price && \Carbon\Carbon::now()->between($product->promotion_start_date, $product->promotion_end_date);
+                            $lowestPrice = $product->variants->min('price');
+                        @endphp
+                        
+                        @if($isPromotionActive)
+                            <div class="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full z-10">
+                                En promotion
+                            </div>
+                        @endif
+                        <img src="{{ asset($product->image) }}" alt="{{ $product->name }}" class="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300">
+                        <div class="p-4 text-center">
+                            <h3 class="font-bold text-xl mb-1 text-gray-800">{{ $product->name }}</h3>
+                            <p class="text-gray-600 text-sm">{{ Str::limit($product->description, 70) }}</p>
+                            <div class="mt-3">
+                                @if($isPromotionActive)
+                                    <span class="text-2xl font-bold text-red-600">{{ number_format($product->promotion_price, 0, ',', '.') }} FCFA</span>
+                                @else
+                                    <span class="text-lg font-bold text-gray-800">
+                                        @if($product->variants->count() > 1)
+                                            À partir de 
+                                        @endif
+                                        {{ number_format($lowestPrice, 0, ',', '.') }} FCFA
+                                    </span>
+                                @endif
+                            </div>
+                            <div class="mt-4">
+                                <a href="/produits/{{ $product->id }}" class="bg-green-700 text-white px-6 py-2 rounded-full hover:bg-green-600 transition duration-300">
+                                    Acheter
                                 </a>
-                            </li>
-                        @endforeach
-                    </ul>
-                @endif
-            </li>
-        @endforeach
-    </ul>
-</aside>
-
-    <div class="flex-1">
-        <h2 class="text-3xl font-bold text-center mb-6">{{ $contentTitle }}</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            @forelse($products as $product)
-                <div class="bg-white rounded-lg shadow-md overflow-hidden relative group border-t-4 border-red-600">
-                    <img src="{{ asset($product->image) }}" alt="{{ $product->name }}" class="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300">
-                    <div class="p-4">
-                        <h3 class="font-bold text-xl mb-1 text-gray-800">{{ $product->name }}</h3>
-                        <p class="text-gray-600 text-sm">{{ Str::limit($product->description, 70) }}</p>
-                        <div class="mt-3 flex justify-between items-center">
-                            <span class="text-2xl font-bold text-red-600">{{ number_format($product->price, 2, ',', ' ') }} FCFA</span>
-                            <a href="/produits/{{ $product->id }}" class="bg-green-700 text-white px-4 py-2 rounded-full hover:bg-green-700 transition duration-300 text-sm">Acheter</a>
+                            </div>
                         </div>
                     </div>
-                </div>
-            @empty
-                <p class="col-span-full text-center text-gray-600 text-lg">Aucun produit ne correspond à votre sélection.</p>
-            @endforelse
+                @empty
+                    <p class="col-span-full text-center text-gray-600 text-lg">Aucun produit ne correspond à votre sélection.</p>
+                @endforelse
+            </div>
         </div>
     </div>
-</div>
+
     <footer class="bg-gray-800 text-white text-center py-6 mt-12">
         <p>&copy; 2025 Global Retail Business. Tous droits réservés.</p>
     </footer>

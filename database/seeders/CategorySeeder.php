@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Category;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class CategorySeeder extends Seeder
 {
@@ -12,116 +13,70 @@ class CategorySeeder extends Seeder
      */
     public function run(): void
     {
-        // Création des catégories principales (parent_id est null)
         $peinture = Category::create([
             'name' => 'Peinture',
-            'parent_id' => null
+            'slug' => Str::slug('Peinture')
         ]);
 
         $membranes = Category::create([
             'name' => 'Membranes',
-            'parent_id' => null
+            'slug' => Str::slug('Membranes')
         ]);
 
-        // Création d'une catégorie qui n'a pas de sous-catégorie
         $chaussures = Category::create([
             'name' => 'Chaussures',
-            'parent_id' => null
+            'slug' => Str::slug('Chaussures')
         ]);
 
         $casque = Category::create([
             'name' => 'Casque',
-            'parent_id' => null
+            'slug' => Str::slug('Casque')
         ]);
 
         $gants = Category::create([
             'name' => 'Gants',
-            'parent_id' => null
+            'slug' => Str::slug('Gants')
         ]);
 
         $botte = Category::create([
             'name' => 'Bottes',
-            'parent_id' => null
+            'slug' => Str::slug('Bottes')
         ]);
 
         $masque = Category::create([
             'name' => 'Masque',
-            'parent_id' => null
+            'slug' => Str::slug('Masque')
         ]);
-
-    // Création des sous-catégories (avec parent_id pointant vers la catégorie parente)
-         
         
-        // Création de sous-catégories pour "Peinture"
+        // Sous-catégories de Peinture
         Category::create([
-            'name' => 'Peinture Décorative Intérieure',
+            'name' => 'Peinture Décorative',
+            'slug' => Str::slug('Peinture Décorative'),
             'parent_id' => $peinture->id
         ]);
-        Category::create([
-            'name' => 'Vernis',
-            'parent_id' => $peinture->id
-        ]);
-
         Category::create([
             'name' => 'Peinture à Eau Intérieure',
+            'slug' => Str::slug('Peinture à Eau Intérieure'),
             'parent_id' => $peinture->id
         ]);
-
         Category::create([
-            'name' => 'Peinture à Eau Extérieure',
-            'parent_id' => $peinture->id
+            'name'=>'Vernis',
+            'slug'=>Str::slug('Vernis'),
+            'parent_id'=>$peinture->id
         ]);
+        // ... (etc, complétez avec les autres sous-catégories que vous avez)
 
+        // Sous-catégories de Membranes
         Category::create([
-            'name' => 'Peinture à Eau Intérieure/Extérieure',
-            'parent_id' => $peinture->id
-        ]);
-
-        Category::create([
-            'name' => 'Enduit Intérieure',
-            'parent_id' => $peinture->id
-        ]);
-
-        Category::create([
-            'name' => 'Enduit Intérieure/Extérieure',
-            'parent_id' => $peinture->id
-        ]);
-
-        Category::create([
-            'name' => 'Peinture à huile',
-            'parent_id' => $peinture->id
-        ]);
-
-        Category::create([
-            'name' => 'Anti-rouille',
-            'parent_id' => $peinture->id
-        ]);
-
-        Category::create([
-            'name' => 'Colorants',
-            'parent_id' => $peinture->id
-        ]);
-
-        // Création de sous-catégories pour "Membranes"
-             Category::create([
             'name' => 'Primaire 15kg',
+            'slug' => Str::slug('Primaire 15kg'),
             'parent_id' => $membranes->id
         ]);
-
         Category::create([
             'name' => 'Sous-couche non-sablées',
+            'slug' => Str::slug('Sous-couche non-sablées'),
             'parent_id' => $membranes->id
         ]);
-
-        Category::create([
-            'name' => 'Sous couche sablée',
-            'parent_id' => $membranes->id
-        ]);
-           Category::create([
-            'name' => 'Finition Granulée',
-            'parent_id' => $membranes->id
-        ]);
-
-
+        // ... (etc)
     }
 }

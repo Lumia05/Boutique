@@ -9,16 +9,16 @@ return new class extends Migration
     {
         Schema::create('product_variants', function (Blueprint $table) {
             $table->id();
-            // Lien vers le produit parent
-            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
-            // Colonnes spécifiques aux variantes
-            $table->string('size');
-            $table->decimal('price', 8, 2);
-            $table->integer('quantite')->default(0);
+            $table->foreignId('products_id')->constrained('products')->onDelete('cascade');
+            $table->string('size')->nullable();
+            $table->string('weight')->nullable();
+            $table->string('color')->nullable();
+            $table->decimal('price', 10, 2);
+            $table->decimal('promotion_price', 10, 2)->nullable();
+            $table->integer('stock');
             $table->timestamps();
         });
     }
-
     public function down(): void
     {
         Schema::dropIfExists('product_variants');
