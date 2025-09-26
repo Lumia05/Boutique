@@ -8,54 +8,68 @@ use Illuminate\Support\Facades\Auth;
 
 class LoginController extends Controller
 {
-    // Affiche le formulaire de connexion
+    /**
+     * Affiche le formulaire de connexion.
+     * Cette route GET est accessible sans restriction (nous avons retiré le middleware 'guest' des routes)
+     * pour éviter la boucle de redirection.
+     */
     public function showLoginForm()
     {
-        // Si l'utilisateur est déjà connecté, on le redirige directement vers l'admin
-        if (Auth::check()) {
-            return redirect('/admin');
+        // Si l'utilisateur est déjà connecté, nous le redirigeons vers sa zone.
+        // C'est une vérification de sécurité supplémentaire, même si le problème est souvent
+        // géré par le middleware RedirectIfAuthenticated.
+        if (Auth::check() && Auth::user()->is_admin) {
+             return redirect('/admin');
         }
+        
         return view('auth.login'); 
     }
 
-    // Gère la tentative de connexion et vérifie le rôle
+    /**
+     * Gère la soumission du formulaire et la logique de connexion/vérification de rôle.
+     */
     public function login(Request $request)
     {
+        // 1. Validation des identifiants
         $credentials = $request->validate([
             'email' => 'required|email',
             'password' => 'required',
         ]);
 
-        // Tente de connecter l'utilisateur
+        // 2. Tente de connecter l'utilisateur
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
 
-            // Vérifie si l'utilisateur est un administrateur
+            // 3. VÉRIFICATION DU RÔLE : L'utilisateur doit être administrateur
             if ($user->is_admin) {
                 $request->session()->regenerate();
-                // Redirection vers le tableau de bord admin
+                // Redirection réussie et garantie vers le tableau de bord admin
                 return redirect()->intended('/admin'); 
             }
 
-            // Si l'utilisateur n'est PAS admin
-            Auth::logout(); // Déconnexion immédiate
+            // 4. Si l'utilisateur est un simple client (is_admin = 0)
+            Auth::logout(); // Déconnexion immédiate du client
             return back()->withErrors([
-                'email' => 'Accès non autorisé : vous devez être administrateur.',
+                'email' => 'Accès non autorisé. Seuls les administrateurs peuvent se connecter ici.',
             ])->onlyInput('email');
         }
 
-        // Échec des identifiants
+        // 5. Échec des identifiants (mot de passe ou email incorrect)
         return back()->withErrors([
             'email' => 'Identifiants ou mot de passe incorrects.',
         ])->onlyInput('email');
     }
 
-    // Gère la déconnexion
+    /**
+     * Gère la déconnexion.
+     */
     public function logout(Request $request)
     {
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect('/');
+        
+        // Après déconnexion, retour à la page d'accueil de la boutique
+        return redirect('/'); 
     }
 }

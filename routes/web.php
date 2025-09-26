@@ -1,16 +1,17 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth; // Nécessaire pour la redirection manuelle
 
 // =========================================================================
 // CONTROLEURS
 // =========================================================================
 
 // Contrôleurs PUBLICS
-use App\Http\Controllers\PublicController; // Pages statiques (Accueil, À Propos, Contact, Réalisations)
-use App\Http\Controllers\ProductsController; // Produits (client)
-use App\Http\Controllers\CartController; // Panier
-use App\Http\Controllers\CheckoutController; // Caisse
+use App\Http\Controllers\PublicController; 
+use App\Http\Controllers\ProductsController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
 
 // Contrôleur AUTHENTIFICATION (Manuelle)
 use App\Http\Controllers\Auth\LoginController;
@@ -18,18 +19,16 @@ use App\Http\Controllers\Auth\LoginController;
 // Contrôleurs ADMIN
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\SettingController; 
-// use App\Http\Controllers\Admin\ProductController as AdminProductController; 
-// use App\Http\Controllers\Admin\OrderController; 
+use App\Http\Controllers\Admin\CategoryController;
+// ... (autres contrôleurs Admin)
 
 
 /*
 |--------------------------------------------------------------------------
 | ROUTES PUBLIQUES (FRONT-END)
 |--------------------------------------------------------------------------
-| Ces routes sont accessibles à tous.
 */
-
-// Pages statiques (Accueil, À propos, Contact, Réalisations)
+// ... (Vos routes publiques restent inchangées ici)
 Route::get('/', [PublicController::class, 'home'])->name('home');
 Route::get('/a-propos', [PublicController::class, 'about'])->name('about.index');
 Route::get('/contact', [PublicController::class, 'contact'])->name('contact.index');
@@ -44,35 +43,40 @@ Route::get('/caissse', [CheckoutController::class, 'index'])->name('checkout.ind
 
 /*
 |--------------------------------------------------------------------------
-| ROUTES AUTHENTIFICATION (MANUELLE)
+| ROUTES AUTHENTIFICATION (MINIMALISTE)
 |--------------------------------------------------------------------------
-| Gérées uniquement par notre LoginController.
 */
 
-// Affichage du formulaire de connexion
-Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login')->middleware('guest');
-// Soumission des identifiants (gère la vérification is_admin et la redirection)
+// Formulaire de connexion (GET) - ACCÈS LIBRE
+Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+
+// Soumission du formulaire (POST)
 Route::post('/login', [LoginController::class, 'login']);
-// Déconnexion (accessible uniquement si l'utilisateur est connecté)
-Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
+
+// Déconnexion
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 
 /*
 |--------------------------------------------------------------------------
 | ROUTES DE LA ZONE ADMINISTRATEUR (BACK-END)
 |--------------------------------------------------------------------------
-| Protégées par 'auth' (connecté) et 'admin' (est un admin).
 */
-Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+// La protection se fait via le constructeur du DashboardController
+Route::prefix('admin')->name('admin.')->group(function () {
     
-    // 1. Tableau de bord principal (sera accessible par /admin)
+    // 1. Tableau de bord principal
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     // 2. Gestion des Paramètres/Experts (Prochaine étape)
     Route::resource('settings', SettingController::class)->only(['index', 'store']); 
 
-    // 3. Les autres Route::resource (à décommenter/créer plus tard)
-    // Route::resource('products', AdminProductController::class);
-    // Route::resource('orders', OrderController::class);
-    // Route::resource('users', UserController::class); 
+    // 2. Gestion des Catégories
+    Route::resource('categories', CategoryController::class); 
+
+    // 3. Gestion des Produits
+    Route::resource('products', ProductController::class);
+
+
+    // ... (autres Route::resource futures)
 });

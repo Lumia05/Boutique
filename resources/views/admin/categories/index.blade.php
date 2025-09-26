@@ -1,122 +1,95 @@
-@extends('admin.layout')
+@extends('layouts.admin')
 
-@section('title', 'Gestion des catégories')
+@section('title', 'Gestion des Catégories')
+@section('page-title', 'Catégories de Produits')
 
 @section('content')
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <a href="{{ route('admin.categories.create') }}" class="btn btn-danger">Ajouter une catégorie</a>
-        <form method="GET" action="{{ route('admin.categories.index') }}" class="d-flex" style="gap:.5rem;">
-            <input type="text" name="q" value="{{ $search ?? '' }}" class="form-control" placeholder="Rechercher (nom ou parent)" />
-            <button type="submit" class="btn btn-outline-danger">Rechercher</button>
-            @if(!empty($search ?? ''))
-                <a href="{{ route('admin.categories.index') }}" class="btn btn-outline-secondary">Réinitialiser</a>
-            @endif
-        </form>
-    </div>
+
+    {{-- Initialise la variable au cas où elle ne serait pas passée par le contrôleur (robustesse) --}}
+    @php
+        $search = $search ?? '';
+    @endphp
 
     @if (session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-lg shadow-md" role="alert">
             {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
 
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="bg-danger text-white">
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+        <div class="flex justify-between items-center mb-6">
+            <a href="{{ route('admin.categories.create') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-150">
+                + Ajouter une Catégorie
+            </a>
+            
+            <form action="{{ route('admin.categories.index') }}" method="GET" class="flex items-center space-x-2">
+                <input type="search" name="q" value="{{ $search }}" placeholder="Rechercher par nom..." 
+                    class="block w-64 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 text-sm"
+                >
+                <button type="submit" class="p-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-150">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path></svg>
+                </button>
+            </form>
+        </div>
+
+        @if ($categories->isEmpty())
+            <p class="text-gray-500 text-center py-8">
+                Aucune catégorie trouvée.
+            </p>
+        @else
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col">Nom</th>
-                            <th scope="col" class="text-center">Nombre de produits</th>
-                            <th scope="col" class="text-center">Actions</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Nom de la Catégorie
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Catégorie Parent
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Total Produits
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                            </th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="bg-white divide-y divide-gray-200">
                         @foreach ($categories as $category)
                             <tr>
-                                <td>
-                                    {{ $category->name }}
-                                    @if($category->parent)
-                                        <small class="text-muted d-block">Parent: {{ $category->parent->name }}</small>
-                                    @endif
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {{-- Affiche un tiret pour les sous-catégories pour un meilleur visuel --}}
+                                    {{ $category->parent_id ? '— ' : '' }}{{ $category->name }}
                                 </td>
-                                <td class="text-center">{{ $category->products_count }}</td>
-                                <td class="text-center">
-                                    <div class="d-flex justify-content-center">
-                                        <button 
-                                            type="button"
-                                            class="btn btn-warning btn-sm me-2"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#editCategoryModal"
-                                            data-category-id="{{ $category->id }}">
-                                            Modifier
-                                        </button>
-                                        <form action="{{ route('admin.categories.destroy', $category) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')">Supprimer</button>
-                                        </form>
-                                    </div>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ $category->parent->name ?? 'Racine' }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{-- Utilisation de l'accesseur pour le compte récursif des produits --}}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $category->total_products_count > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800' }}">
+                                        {{ $category->total_products_count }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <a href="{{ route('admin.categories.edit', $category) }}" class="text-blue-600 hover:text-blue-900 mr-3">Modifier</a>
+                                    
+                                    <form action="{{ route('admin.categories.destroy', $category) }}" method="POST" class="inline-block" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ? Cette action est irréversible et supprime les produits liés.')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-red-600 hover:text-red-900">Supprimer</button>
+                                    </form>
                                 </td>
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
-        </div>
-    </div>
-    
-    <div class="d-flex justify-content-center mt-4">
-        {{ $categories->withQueryString()->links('pagination::bootstrap-5') }}
-    </div>
 
-        <div class="modal fade" id="editCategoryModal" tabindex="-1" aria-labelledby="editCategoryModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editCategoryModalLabel">Modifier une categorie</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="categoryEditFormLoader" class="text-center py-5">
-                        <div class="spinner-border text-danger" role="status">
-                            <span class="visually-hidden">Chargement...</span>
-                        </div>
-                    </div>
-                </div>
+            <div class="mt-4">
+                {{ $categories->appends(['q' => $search])->links() }}
             </div>
-        </div>
+        @endif
     </div>
-@endsection
 
-@section('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        var editCategoryModal = document.getElementById('editCategoryModal');
-        editCategoryModal.addEventListener('show.bs.modal', function (event) {
-            var button = event.relatedTarget;
-            var categoryId = button.getAttribute('data-category-id');
-
-            var modalBody = editCategoryModal.querySelector('.modal-body');
-            modalBody.innerHTML = `
-                <div id="categoryEditFormLoader" class="text-center py-5">
-                    <div class="spinner-border text-danger" role="status">
-                        <span class="visually-hidden">Chargement...</span>
-                    </div>
-                </div>
-            `;
-
-            fetch(`/admin/categories/${categoryId}/edit-modal`)
-                .then(response => response.text())
-                .then(html => {
-                    modalBody.innerHTML = html;
-                })
-                .catch(error => {
-                    console.error('Erreur lors du chargement du formulaire:', error);
-                    modalBody.innerHTML = '<div class="alert alert-danger">Impossible de charger le formulaire.</div>';
-                });
-        });
-    });
-</script>
 @endsection

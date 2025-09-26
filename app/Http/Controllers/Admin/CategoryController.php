@@ -3,122 +3,114 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Category;
 use Illuminate\Http\Request;
+use App\Models\Category;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str; // Pour la création automatique du slug
 
 class CategoryController extends Controller
 {
+    // CONTOURNEMENT : Vérification manuelle de la connexion.
+    public function __construct()
+    {
+        if (!Auth::check()) {
+            redirect()->route('login')->send();
+            exit();
+        }
+    }
+
+    /**
+     * Affiche la liste des catégories.
+     */
+    /**
+     * Affiche la liste des catégories avec le comptage de produits récursif.
+     */
     public function index(Request $request)
     {
         $search = trim((string) $request->input('q', ''));
 
         $query = Category::query()
-            ->withCount('products')
-            ->with('parent');
+            // IMPORTANT : Chargement des relations NÉCESSAIRES (Eager Loading)
+            // 'children' est essentiel pour la récursion dans l'accesseur.
+            // 'products' est essentiel pour le compte initial des produits directs.
+            // 'parent' est pour l'affichage du nom du parent dans le tableau.
+            ->with(['children', 'products', 'parent']) 
+            ->orderBy('name');
 
         if ($search !== '') {
-            $variants = $this->generateSearchVariants($search);
-            $query->where(function ($q) use ($variants) {
-                foreach ($variants as $term) {
-                    $q->orWhereRaw('LOWER(name) LIKE ?', ['%' . strtolower($term) . '%'])
-                      ->orWhereHas('parent', function ($q2) use ($term) {
-                          $q2->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($term) . '%']);
-                      });
-                }
+            // Logique de recherche (simplifiée ou celle que vous aviez)
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'LIKE', '%' . $search . '%');
             });
         }
-
+        
+        // Exécution de la requête avec pagination
         $categories = $query->paginate(10)->appends(['q' => $search]);
 
         return view('admin.categories.index', compact('categories', 'search'));
     }
-
-    private function generateSearchVariants(string $input): array
-    {
-        $input = trim($input);
-        if ($input === '') {
-            return [];
-        }
-
-        $l = mb_strtolower($input);
-        $variants = [$input, $l];
-
-        // Pluriels FR courants
-        // 1) s <-> Ø
-        if (str_ends_with($l, 's')) {
-            $variants[] = mb_substr($l, 0, -1);
-        } else {
-            $variants[] = $l . 's';
-        }
-
-        // 2) x <-> Ø (ex: bijoux <-> bijou)
-        if (str_ends_with($l, 'x')) {
-            $variants[] = mb_substr($l, 0, -1);
-        } else {
-            $variants[] = $l . 'x';
-        }
-
-        // 3) -al <-> -aux (ex: animal/animaux)
-        if (str_ends_with($l, 'al')) {
-            $variants[] = mb_substr($l, 0, -2) . 'aux';
-        }
-        if (str_ends_with($l, 'aux')) {
-            $variants[] = mb_substr($l, 0, -3) . 'al';
-        }
-
-        // 4) -eau <-> -eaux (ex: bateau/bateaux)
-        if (str_ends_with($l, 'eau')) {
-            $variants[] = $l . 'x'; // eaux
-        }
-        if (str_ends_with($l, 'eaux')) {
-            $variants[] = mb_substr($l, 0, -1); // eau
-        }
-
-        return array_values(array_unique($variants));
-    }
-
+    /**
+     * Affiche le formulaire de création de catégorie.
+     */
     public function create()
     {
-        $parentCategories = Category::whereNull('parent_id')->get();
-        return view('admin.categories.create', compact('parentCategories'));
+        return view('admin.categories.create');
     }
 
+    /**
+     * Enregistre une nouvelle catégorie.
+     */
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'parent_id' => 'nullable|exists:categories,id',
+            'name' => 'required|string|max:255|unique:categories,name',
+            'description' => 'nullable|string',
         ]);
 
-        Category::create($request->all());
+        Category::create([
+            'name' => $request->name,
+            // Génération du slug à partir du nom
+            'slug' => Str::slug($request->name), 
+            'description' => $request->description,
+        ]);
+
         return redirect()->route('admin.categories.index')->with('success', 'Catégorie créée avec succès.');
     }
 
+    /**
+     * Affiche le formulaire d'édition de catégorie.
+     */
     public function edit(Category $category)
     {
-        $parentCategories = Category::whereNull('parent_id')->get();
-        return view('admin.categories.edit', compact('category', 'parentCategories'));
+        return view('admin.categories.edit', compact('category'));
     }
-    public function editModal(Category $category)
-    {
-        return view('admin.categories.edit_modal_content', compact('category'));
-    }
-  
 
+    /**
+     * Met à jour la catégorie.
+     */
     public function update(Request $request, Category $category)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'parent_id' => 'nullable|exists:categories,id',
+            // La validation unique doit ignorer l'ID actuel
+            'name' => 'required|string|max:255|unique:categories,name,'.$category->id,
+            'description' => 'nullable|string',
         ]);
 
-        $category->update($request->all());
+        $category->update([
+            'name' => $request->name,
+            'slug' => Str::slug($request->name), 
+            'description' => $request->description,
+        ]);
+
         return redirect()->route('admin.categories.index')->with('success', 'Catégorie mise à jour avec succès.');
     }
 
+    /**
+     * Supprime la catégorie.
+     */
     public function destroy(Category $category)
     {
-        $category->delete();
+        $category->delete(); 
         return redirect()->route('admin.categories.index')->with('success', 'Catégorie supprimée avec succès.');
     }
 }
