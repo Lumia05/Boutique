@@ -20,6 +20,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\SettingController; 
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\ProductController;
 // ... (autres contrôleurs Admin)
 
 
@@ -76,6 +77,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     // 3. Gestion des Produits
     Route::resource('products', ProductController::class);
+    Route::get('products/{product}/variants', [ProductController::class, 'showVariants'])->name('products.variants.index');
 
 
     // ... (autres Route::resource futures)

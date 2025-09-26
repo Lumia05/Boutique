@@ -1,67 +1,163 @@
-<form action="{{ route('admin.products.update', $product->id) }}" method="POST" enctype="multipart/form-data">
-    @csrf
-    @method('PUT')
+@extends('layouts.admin')
 
-    <div class="mb-3">
-        <label for="name" class="form-label">Nom du produit</label>
-        <input type="text" class="form-control" id="name" name="name" value="{{ old('name', $product->name) }}" required>
-    </div>
-    
-    <div class="mb-3">
-        <label for="price" class="form-label">Prix</label>
-        <input type="number" class="form-control" id="price" name="price" value="{{ old('price', $product->price) }}" required>
+@section('title', 'Modifier le Produit')
+@section('page-title', 'Modifier : ' . $product->name)
+
+@section('content')
+
+    <div class="bg-white p-6 rounded-xl shadow-lg max-w-4xl mx-auto">
+        
+        <form action="{{ route('admin.products.update', $product) }}" method="POST" enctype="multipart/form-data">
+            @csrf
+            @method('PUT')
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Nom du Produit <span class="text-red-500">*</span></label>
+                    <input type="text" name="name" id="name" required
+                        value="{{ old('name', $product->name) }}"
+                        class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 p-2"
+                        placeholder="Ex: Pince Multifonction Pro"
+                    >
+                    @error('name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label for="category_id" class="block text-sm font-medium text-gray-700">Catégorie <span class="text-red-500">*</span></label>
+                    <select name="category_id" id="category_id" required
+                        class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 p-2"
+                    >
+                        <option value="">-- Sélectionner une Catégorie --</option>
+                        @foreach ($categories as $category)
+                            <option value="{{ $category->id }}" {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>
+                                {{ $category->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('category_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+            </div>
+
+            <div class="mb-6 md:col-span-2">
+                <h3 class="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Variantes (Prix, Promotion, Stock) <span class="text-red-500">*</span></h3>
+                
+                <div class="grid grid-cols-7 gap-3 mb-2 text-xs font-semibold text-gray-600">
+                    <div class="col-span-2">Nom de la Variante</div>
+                    <div class="col-span-1">Prix Normal (XAF)</div>
+                    <div class="col-span-2">Prix Promotionnel (Optionnel)</div>
+                    <div class="col-span-1">Stock</div>
+                    <div class="col-span-1"></div> {{-- Pour le bouton supprimer --}}
+                </div>
+                
+                <div id="variants-container" class="space-y-3">
+                    
+                    @php
+                        // Logique pour utiliser les données OLD en cas d'erreur ou les données existantes du produit
+                        $variantsData = old('variant_names') ? 
+                            collect(old('variant_names'))->map(function ($name, $key) {
+                                return (object) [
+                                    'name' => $name, 
+                                    'price' => old('variant_prices')[$key], 
+                                    'promotion_price' => old('variant_promotion_prices')[$key] ?? null,
+                                    'stock' => old('variant_stocks')[$key]
+                                ];
+                            }) : 
+                            $product->variants;
+
+                        // Si le produit n'a aucune variante (cas rare), on injecte une ligne vide
+                        if ($variantsData->isEmpty()) {
+                            $variantsData = collect([(object)['name' => '', 'price' => '', 'promotion_price' => '', 'stock' => '']]);
+                        }
+                    @endphp
+                    
+                    @foreach ($variantsData as $variant)
+                        <div class="variant-row grid grid-cols-7 gap-3 items-center">
+                            <div class="col-span-2">
+                                <input type="text" name="variant_names[]" value="{{ $variant->name }}" placeholder="Ex: Taille S - Noir" 
+                                       class="block w-full border border-gray-300 rounded-lg p-2 text-sm" required>
+                            </div>
+                            <div class="col-span-1">
+                                <input type="number" step="100" min="0" name="variant_prices[]" value="{{ $variant->price }}" placeholder="Prix" 
+                                       class="block w-full border border-gray-300 rounded-lg p-2 text-sm" required>
+                            </div>
+                            <div class="col-span-2">
+                                <input type="number" step="100" min="0" name="variant_promotion_prices[]" value="{{ $variant->promotion_price }}" placeholder="Prix Promo" 
+                                       class="block w-full border border-gray-300 rounded-lg p-2 text-sm">
+                            </div>
+                            <div class="col-span-1">
+                                <input type="number" min="0" name="variant_stocks[]" value="{{ $variant->stock }}" placeholder="Stock" 
+                                       class="block w-full border border-gray-300 rounded-lg p-2 text-sm" required>
+                            </div>
+                            <div class="col-span-1 text-right">
+                                {{-- Bouton Supprimer uniquement s'il y a plus d'une variante ou si c'est une ligne de données OLD (pour éviter de supprimer la dernière ligne nécessaire) --}}
+                                @if (count($variantsData) > 1 || old('variant_names'))
+                                    <button type="button" class="remove-variant text-red-600 hover:text-red-900 text-sm">Supprimer</button>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                
+                <button type="button" id="add-variant" class="mt-4 px-3 py-1 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition duration-150">
+                    + Ajouter une Variante
+                </button>
+
+                @error('variant_names.*') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                @error('variant_prices.*') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                @error('variant_promotion_prices.*') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                @error('variant_stocks.*') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+            </div>
+            <div class="mb-6">
+                <label for="description" class="block text-sm font-medium text-gray-700">Description Détaillée <span class="text-red-500">*</span></label>
+                <textarea name="description" id="description" rows="5" required
+                    class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 p-2"
+                >{{ old('description', $product->description) }}</textarea>
+                @error('description') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 items-center">
+                <div class="md:col-span-2">
+                    <label for="image" class="block text-sm font-medium text-gray-700 mb-2">Image du Produit (Max 2MB)</label>
+                    
+                    @if ($product->image)
+                        <div class="flex items-center mb-3">
+                            <img src="{{ asset('storage/' . $product->image) }}" alt="Image actuelle" class="w-20 h-20 object-cover rounded-lg border mr-4">
+                            <span class="text-sm text-gray-600">Image actuelle</span>
+                        </div>
+                    @endif
+
+                    <input type="file" name="image" id="image" accept="image/*"
+                        class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"
+                    >
+                    @error('image') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                <div class="flex items-center pt-6 md:pt-0">
+                    <input id="is_active" name="is_active" type="checkbox" value="1" 
+                        {{ old('is_active', $product->is_active) ? 'checked' : '' }} 
+                        class="h-5 w-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                    >
+                    <label for="is_active" class="ml-2 block text-sm font-medium text-gray-700">
+                        Produit Actif / Visible
+                    </label>
+                    @error('is_active') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-gray-200 flex justify-end">
+                <a href="{{ route('admin.products.index') }}" class="px-4 py-2 mr-3 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition duration-150">
+                    Annuler
+                </a>
+                <button type="submit" class="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-150">
+                    Mettre à Jour le Produit
+                </button>
+            </div>
+        </form>
+
     </div>
 
-    <div class="mb-3">
-        <label for="quantite" class="form-label">Quantité en stock</label>
-        <input type="number" class="form-control" id="quantite" name="quantite" value="{{ old('quantite', $product->quantite) }}" required>
-    </div>
+    {{-- Script JavaScript OBLIGATOIRE pour la gestion dynamique des lignes --}}
+    @include('admin.products.variant_script')
 
-    <div class="mb-3">
-        <label for="description" class="form-label">Description</label>
-        <textarea class="form-control" id="description" name="description" rows="3">{{ old('description', $product->description) }}</textarea>
-    </div>
-
-    <div class="mb-3">
-        <label for="technical_info" class="form-label">Informations techniques (séparées par un |)</label>
-        <textarea class="form-control" id="technical_info" name="technical_info" rows="3">{{ old('technical_info', $product->technical_info) }}</textarea>
-    </div>
-    
-    <div class="mb-3">
-        <label for="hex_colors" class="form-label">Couleurs Hex (séparées par une virgule)</label>
-        <input type="text" class="form-control" id="hex_colors" name="hex_colors" value="{{ old('hex_colors', $product->hex_colors) }}">
-    </div>
-
-    <div class="mb-3">
-        <label for="image" class="form-label">Image du produit</label>
-        <input class="form-control" type="file" id="image" name="image">
-        @if($product->image)
-            <img src="{{ asset($product->image) }}" alt="Image actuelle" class="mt-2" style="width: 100px;">
-        @endif
-    </div>
-    
-    <hr class="my-4">
-
-    <h5 class="fw-bold">Gérer les promotions</h5>
-    <div class="mb-3">
-        <label for="promotion_price" class="form-label">Prix de promotion</label>
-        <input type="number" class="form-control" id="promotion_price" name="promotion_price" value="{{ old('promotion_price', $product->promotion_price) }}">
-    </div>
-
-    <div class="mb-3">
-        <label for="promotion_start_date" class="form-label">Date de début de promotion</label>
-        <input type="datetime-local" class="form-control" id="promotion_start_date" name="promotion_start_date" value="{{ old('promotion_start_date', $product->promotion_start_date) }}">
-    </div>
-
-    <div class="mb-3">
-        <label for="promotion_end_date" class="form-label">Date de fin de promotion</label>
-        <input type="datetime-local" class="form-control" id="promotion_end_date" name="promotion_end_date" value="{{ old('promotion_end_date', $product->promotion_end_date) }}">
-    </div>
-
-
-
-    <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
-        <button type="submit" class="btn btn-success">Enregistrer les modifications</button>
-    </div>
-</form>
+@endsection

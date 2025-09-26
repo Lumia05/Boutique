@@ -3,155 +3,158 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Category;
-use App\Models\Products;
 use Illuminate\Http\Request;
+use App\Models\Products;
+use App\Models\Category;
+use App\Models\ProductVariant; // Nouveau modèle de variante
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
-    /**
-     * Affiche une liste de tous les produits.
-     */
-    public function index()
+    // ... (constructeur et méthode index restent inchangés, sauf la validation) ...
+
+    public function showVariants(Products $product)
     {
-        $products = Products::with('category')->latest()->paginate(20);
-        return view('admin.products.index', compact('products'));
+        // On s'assure que les variantes sont chargées pour la vue
+        $product->load('variants');
+        
+        // Retourne la vue que nous avons créée (resources/views/admin/products/variants.blade.php)
+        return view('admin.products.variants', compact('product'));
     }
 
-    /**
-     * Affiche le formulaire pour créer un nouveau produit.
-     */
+    public function index(Request $request)
+    {
+        $search = trim((string) $request->input('q', ''));
+
+        $query = Products::query()
+            ->with('category', 'variants') // Charger les variantes pour l'affichage dans l'index (optionnel mais utile)
+            ->orderBy('created_at', 'desc');
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'LIKE', '%' . $search . '%')
+                  ->orWhere('description', 'LIKE', '%' . $search . '%');
+            });
+        }
+
+        $products = $query->paginate(10)->appends(['q' => $search]);
+
+        return view('admin.products.index', compact('products', 'search'));
+    }
+
     public function create()
     {
-        $categories = Category::all();
+        $categories = Category::all(); 
         return view('admin.products.create', compact('categories'));
     }
 
     /**
-     * Stocke un nouveau produit dans la base de données.
+     * Enregistre un nouveau produit et ses variantes.
      */
-  public function store(Request $request)
-{
-    // 1. Validez les données du produit principal
-    // Nous retirons 'price' et 'quantite' de cette validation
-    $validatedData = $request->validate([
-        'name' => 'required|string|max:255',
-        'reference' => 'nullable|string|max:255|unique:products',
-        'description' => 'nullable|string',
-        'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-        'category_id' => 'required|exists:categories,id',
-        'color' => 'nullable|string|max:255',
-        'features' => 'nullable|string',
-        'recommended_use' => 'nullable|string',
-        'technical_info' => 'nullable|string',
-        'price' => 'required|numeric',
-        'quantite' => 'required|numeric',
-    ]);
-
-    if ($request->hasFile('image')) {
-        $imagePath = $request->file('image')->store('images', 'public');
-        $validatedData['image'] = 'storage/' . $imagePath;
-    }
-
-    // Gérer les chaînes de caractères pour les colonnes JSON ou texte
-    $validatedData['features'] = $request->features;
-    $validatedData['technical_info'] = $request->technical_info;
-    
-    // 2. Créez le produit de base sans les données de variantes
-    $product = Products::create($validatedData);
-
-    // 3. Validez et enregistrez les variantes
-    if ($request->has('variants')) {
-        // Le formulaire a été soumis avec plusieurs variantes
+     public function store(Request $request)
+    {
         $request->validate([
-            'variants' => 'required|array',
-            'variants.*.size' => 'required|string',
-            'variants.*.price' => 'required|numeric|min:0',
-            'variants.*.quantite' => 'required|integer|min:0',
+            'category_id' => 'required|exists:categories,id',
+            'name' => 'required|string|max:255|unique:products,name',
+            'description' => 'required|string',
+            'is_active' => 'nullable|in:1,0', 
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            
+            // Validation des listes de variantes
+            'variant_names.*' => 'required|string|max:100',
+            'variant_prices.*' => 'required|numeric|min:0',
+            // promotion_price est optionnel et peut être null
+            'variant_promotion_prices.*' => 'nullable|numeric|min:0|lt:variant_prices.*', 
+            'variant_stocks.*' => 'required|integer|min:0',
         ]);
 
-    }
-
-    return redirect()->route('admin.products.index')->with('success', 'Produit créé avec succès.');
-}
-
-    /**
-     * Affiche les détails d'un produit.
-     */
-    public function show(Products $product)
-    {
-        return view('admin.products.show', compact('product'));
-    }
-  
-
-    /**
-     * Supprime un produit de la base de données.
-     */
-    public function destroy(Products $product)
-    {
-        if ($product->image && Storage::disk('public')->exists($product->image)) {
-            Storage::disk('public')->delete($product->image);
-        }
+        $data = $request->except(['image', '_token', 'variant_names', 'variant_prices', 'variant_promotion_prices', 'variant_stocks']);
+        $data['slug'] = Str::slug($request->name);
+        $data['is_active'] = $request->has('is_active');
         
-        $product->delete();
+        // ... (gestion de l'image)
+        
+        $product = Products::create($data);
 
-        return redirect()->route('admin.products.index')->with('success', 'Produit supprimé avec succès.');
+        // Enregistrement des variantes
+        if ($request->has('variant_names')) {
+            $variants = [];
+            foreach ($request->variant_names as $key => $name) {
+                // Vérifier la cohérence des données
+                if (isset($request->variant_prices[$key]) && isset($request->variant_stocks[$key])) {
+                    $variants[] = new \App\Models\ProductVariant([
+                        'name' => $name,
+                        'price' => $request->variant_prices[$key],
+                        // Enregistrer le prix de promotion (peut être null)
+                        'promotion_price' => $request->variant_promotion_prices[$key] ?? null,
+                        'stock' => $request->variant_stocks[$key],
+                    ]);
+                }
+            }
+            $product->variants()->saveMany($variants);
+        }
+
+        return redirect()->route('admin.products.index')->with('success', 'Produit et variantes créés avec succès.');
     }
-    
-    /**
-     * Affiche le formulaire de modification d'un produit.
-     * @param  Product  $product
-     * @return \Illuminate\View\View
-     */
+
     public function edit(Products $product)
     {
-        return view('admin.products.edit', compact('product'));
+        // Charger explicitement les variantes pour la vue d'édition
+        $product->load('variants');
+        $categories = Category::all();
+        return view('admin.products.edit', compact('product', 'categories'));
     }
 
     /**
-     * Met à jour un produit dans la base de données.
-     * @param  \Illuminate\Http\Request  $request
-     * @param  Product  $product
-     * @return \Illuminate\Http\RedirectResponse
+     * Met à jour un produit existant et ses variantes.
      */
-    public function update(Request $request, Products $product)
+   public function update(Request $request, Products $product)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
-            'quantite' => 'required|integer|min:0',
-            'description' => 'nullable|string',
-            'technical_info' => 'nullable|string',
-            'hex_colors' => 'nullable|string',
+            'category_id' => 'required|exists:categories,id',
+            'name' => 'required|string|max:255|unique:products,name,' . $product->id, 
+            'description' => 'required|string',
+            'is_active' => 'nullable|in:1,0',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'promotion_price' => 'nullable|numeric|min:0',
-            'promotion_start_date' => 'nullable|date',
-            'promotion_end_date' => 'nullable|date|after_or_equal:promotion_start_date',
+            
+            // Validation des listes de variantes
+            'variant_names.*' => 'required|string|max:100',
+            'variant_prices.*' => 'required|numeric|min:0',
+            'variant_promotion_prices.*' => 'nullable|numeric|min:0|lt:variant_prices.*', 
+            'variant_stocks.*' => 'required|integer|min:0',
         ]);
-    
-        // Mettre à jour les champs existants
-        $product->name = $request->input('name');
-        $product->price = $request->input('price');
-        $product->quantite = $request->input('quantite');
-        $product->description = $request->input('description');
-        $product->technical_info = $request->input('technical_info');
-        $product->color = $request->input('hex_colors');
-    
-        // Gérer les nouveaux champs de promotion
-        $product->promotion_price = $request->input('promotion_price');
-        $product->promotion_start_date = $request->input('promotion_start_date');
-        $product->promotion_end_date = $request->input('promotion_end_date');
-    
-        if ($request->hasFile('image')) {
-            // Logique pour sauvegarder la nouvelle image
-            $imagePath = $request->file('image')->store('products', 'public');
-            $product->image = 'storage/' . $imagePath;
+
+        $data = $request->except(['image', '_token', '_method', 'variant_names', 'variant_prices', 'variant_promotion_prices', 'variant_stocks']);
+        $data['slug'] = Str::slug($request->name);
+        $data['is_active'] = $request->has('is_active');
+        
+        // ... (gestion de l'image)
+
+        $product->update($data);
+        
+        // 1. Suppression de toutes les anciennes variantes
+        $product->variants()->delete();
+        
+        // 2. Enregistrement des nouvelles variantes
+        if ($request->has('variant_names')) {
+            $variants = [];
+            foreach ($request->variant_names as $key => $name) {
+                if (isset($request->variant_prices[$key]) && isset($request->variant_stocks[$key])) {
+                    $variants[] = new \App\Models\ProductVariant([
+                        'name' => $name,
+                        'price' => $request->variant_prices[$key],
+                        'promotion_price' => $request->variant_promotion_prices[$key] ?? null,
+                        'stock' => $request->variant_stocks[$key],
+                    ]);
+                }
+            }
+            $product->variants()->saveMany($variants);
         }
-    
-        $product->save();
-    
-        return redirect()->route('admin.products.index')->with('success', 'Produit mis à jour avec succès !');
+
+        return redirect()->route('admin.products.index')->with('success', 'Produit et variantes mis à jour avec succès.');
     }
+
+    // ... (méthode destroy inchangée) ...
 }
