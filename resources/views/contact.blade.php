@@ -70,11 +70,11 @@
                             </p>
                             <p class="flex items-center">
                                 <i class="fas fa-phone-alt text-red-600 text-xl w-6 flex-shrink-0"></i> 
-                                <span class="ml-3"><strong>Appel Général :</strong> <a href="tel:+2376XXXXXXXX" class="hover:underline font-semibold">+237 6XX XX XX XX</a></span>
+                                <span class="ml-3"><strong>Appel Général :</strong> <a href="tel:{{ $manager['phone'] }}" class="hover:underline font-semibold">{{ $manager['phone'] }}</a></span>
                             </p>
                             <p class="flex items-center">
                                 <i class="fas fa-envelope text-red-600 text-xl w-6 flex-shrink-0"></i> 
-                                <span class="ml-3"><strong>E-mail :</strong> <a href="mailto:contact@globalretail.com" class="hover:underline">contact@globalretail.com</a></span>
+                                <span class="ml-3"><strong>E-mail :</strong> <a href="mailto:{{ $manager['email'] }}" class="hover:underline">{{ $manager['email'] }}</a></span>
                             </p>
                             <p class="flex items-center">
                                 <i class="fab fa-facebook-square text-red-600 text-xl w-6 flex-shrink-0"></i> 
@@ -86,11 +86,12 @@
                     <div class="p-6 bg-white rounded-lg shadow-md border-l-4 border-red-600">
                         <h2 class="text-2xl font-bold mb-4">Horaires d'Ouverture</h2>
                         <div class="space-y-2 text-gray-700 text-lg">
+                            {{-- Utilisation des données dynamiques du contrôleur --}}
                             <p class="flex justify-between">
-                                <span class="font-semibold">Lundi - Vendredi :</span> <span>08h00 - 17h00</span>
+                                <span class="font-semibold">Lundi - Vendredi :</span> <span>{{ $hours['open'] }} - {{ $hours['close'] }}</span>
                             </p>
                             <p class="flex justify-between">
-                                <span class="font-semibold">Samedi :</span> <span>09h00 - 13h00</span>
+                                <span class="font-semibold">Samedi :</span> <span>{{ $hours['open'] }} - 13h00</span>
                             </p>
                             <p class="flex justify-between">
                                 <span class="font-semibold text-red-600">Dimanche :</span> <span class="text-red-600">Fermé</span>
@@ -106,53 +107,33 @@
                 <h2 class="text-3xl font-bold text-gray-900 mb-6 border-b-2 border-red-600 pb-2 text-center">Contactez nos Experts Directement</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     
-                    <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-red-500">
-                        <h3 class="font-bold text-xl mb-2 text-red-600">Expert EPI</h3>
-                        <p class="text-gray-600 mb-4">Pour les Équipements de Protection Individuelle (EPI).</p>
-                        <div class="flex flex-wrap gap-2">
-                            <a href="https://wa.me/+237690527144" class="inline-flex items-center text-white bg-green-500 px-3 py-1 rounded-full text-sm hover:bg-green-600 transition duration-300">
-                                <i class="fab fa-whatsapp mr-2"></i> WhatsApp
-                            </a>
-                            <a href="tel:+237690527144" class="inline-flex items-center text-white bg-red-600 px-3 py-1 rounded-full text-sm hover:bg-red-700 transition duration-300">
-                                <i class="fas fa-phone-alt mr-2"></i> Appeler
-                            </a>
-                            <a href="sms:+237690527144" class="inline-flex items-center text-white bg-blue-600 px-3 py-1 rounded-full text-sm hover:bg-blue-700 transition duration-300">
-                                <i class="fas fa-sms mr-2"></i> SMS
-                            </a>
+                    @forelse ($experts as $expert)
+                        {{-- Génération dynamique des blocs d'experts --}}
+                        <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-red-500">
+                            <h3 class="font-bold text-xl mb-2 text-red-600">{{ $expert->role }}</h3>
+                            <p class="text-gray-600 mb-4">{{ $expert->name }}</p>
+                            <div class="flex flex-wrap gap-2">
+                                @if ($expert->phone)
+                                    <a href="https//wa.me/+237{{ $expert->whatsapp }}" class="inline-flex items-center text-white bg-green-500 px-3 py-1 rounded-full text-sm hover:bg-green-600 transition duration-300" target="_blank">
+                                        <i class="fab fa-whatsapp mr-2"></i> WhatsApp
+                                    </a>
+                                @endif
+                                @if ($expert->phone)
+                                    <a href="tel:+237{{ $expert->phone }}" class="inline-flex items-center text-white bg-red-600 px-3 py-1 rounded-full text-sm hover:bg-red-700 transition duration-300">
+                                        <i class="fas fa-phone-alt mr-2"></i> Appeler
+                                    </a>
+                                    <a href="sms:{{ $expert->phone }}" class="inline-flex items-center text-white bg-blue-600 px-3 py-1 rounded-full text-sm hover:bg-blue-700 transition duration-300">
+                                        <i class="fas fa-sms mr-2"></i> SMS
+                                    </a>
+                                @endif
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-teal-500">
-                        <h3 class="font-bold text-xl mb-2 text-teal-600">Expert Membranes</h3>
-                        <p class="text-gray-600 mb-4">Pour les solutions d'étanchéité et de membranes spécifiques.</p>
-                        <div class="flex flex-wrap gap-2">
-                            <a href="https://wa.me/+237693606164" class="inline-flex items-center text-white bg-green-500 px-3 py-1 rounded-full text-sm hover:bg-green-600 transition duration-300">
-                                <i class="fab fa-whatsapp mr-2"></i> WhatsApp
-                            </a>
-                            <a href="tel:+237693606164" class="inline-flex items-center text-white bg-red-600 px-3 py-1 rounded-full text-sm hover:bg-red-700 transition duration-300">
-                                <i class="fas fa-phone-alt mr-2"></i> Appeler
-                            </a>
-                            <a href="sms:+237693606164" class="inline-flex items-center text-white bg-blue-600 px-3 py-1 rounded-full text-sm hover:bg-blue-700 transition duration-300">
-                                <i class="fas fa-sms mr-2"></i> SMS
-                            </a>
+                    @empty
+                        {{-- Message si aucun expert n'est actif/visible --}}
+                        <div class="md:col-span-3 text-center py-6 text-gray-500">
+                            <p>Aucun expert spécialisé n'est actuellement visible. Veuillez utiliser le formulaire de contact général.</p>
                         </div>
-                    </div>
-
-                    <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-yellow-500">
-                        <h3 class="font-bold text-xl mb-2 text-yellow-600">Expert Peinture</h3>
-                        <p class="text-gray-600 mb-4">Pour les revêtements, la peinture industrielle et les finitions.</p>
-                        <div class="flex flex-wrap gap-2">
-                            <a href="https://wa.me/+237659588791" class="inline-flex items-center text-white bg-green-500 px-3 py-1 rounded-full text-sm hover:bg-green-600 transition duration-300">
-                                <i class="fab fa-whatsapp mr-2"></i> WhatsApp
-                            </a>
-                            <a href="tel:+237659588791" class="inline-flex items-center text-white bg-red-600 px-3 py-1 rounded-full text-sm hover:bg-red-700 transition duration-300">
-                                <i class="fas fa-phone-alt mr-2"></i> Appeler
-                            </a>
-                            <a href="sms:+237659588791" class="inline-flex items-center text-white bg-blue-600 px-3 py-1 rounded-full text-sm hover:bg-blue-700 transition duration-300">
-                                <i class="fas fa-sms mr-2"></i> SMS
-                            </a>
-                        </div>
-                    </div>
+                    @endforelse
                 </div>
             </div>
 

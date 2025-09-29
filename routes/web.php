@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 
 // Contrôleurs PUBLICS
 use App\Http\Controllers\PublicController; 
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
@@ -36,27 +37,33 @@ use App\Http\Controllers\Admin\CustomerController;
 // ... (Vos routes publiques restent inchangées ici)
 Route::get('/', [PublicController::class, 'home'])->name('home');
 Route::get('/a-propos', [PublicController::class, 'about'])->name('about.index');
-Route::get('/contact', [PublicController::class, 'contact'])->name('contact.index');
+Route::get('/contact', [ContactController::class, 'index'])->name('contact.index');
 Route::get('/realisations', [PublicController::class, 'realisations'])->name('realisations.index');
 
 // Routes Commerce Électronique (Client)
 Route::get('/produits', [ProductsController::class, 'index'])->name('products.index');
 Route::get('/produits/{product}', [ProductsController::class, 'show'])->name('products.show');
-// Afficher le contenu du panier
+
+/*
+|--------------------------------------------------------------------------
+| ROUTES DU PANIER (CLIENT)
+|--------------------------------------------------------------------------
+*/
+
+// 1. Afficher le contenu du panier
 Route::get('/panier', [CartController::class, 'index'])->name('cart.index');
 
-// Ajouter un produit au panier (c'est la route 'cart.add' que vous recherchez)
-// On utilise POST ou PUT/PATCH pour les modifications de données.
+// 2. Ajouter un produit/variante au panier (Route POST pour la modification de données)
 Route::post('/panier/ajouter', [CartController::class, 'add'])->name('cart.add');
-// Mettre à jour la quantité d'un article spécifique
-Route::post('/panier/maj', [CartController::class, 'update'])->name('cart.update'); // ou use PUT/PATCH
 
-// Retirer un article spécifique du panier
-Route::delete('/panier/retirer/{product_id}', [CartController::class, 'remove'])->name('cart.remove');
+// 3. Mettre à jour la quantité d'un article
+Route::post('/panier/maj', [CartController::class, 'update'])->name('cart.update');
 
-// Vider complètement le panier
+// 4. Retirer un article spécifique du panier
+Route::delete('/panier/retirer/{itemId}', [CartController::class, 'remove'])->name('cart.remove');
+
+// 5. Vider complètement le panier
 Route::delete('/panier/vider', [CartController::class, 'clear'])->name('cart.clear');
-
 
 /*
 |--------------------------------------------------------------------------

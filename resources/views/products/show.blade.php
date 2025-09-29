@@ -21,6 +21,9 @@
             border-color: #ef4444; /* red-500 */
             box-shadow: 0 0 0 3px #fef2f2; /* red-50 */
         }
+        .variant-option.opacity-50 {
+             cursor: not-allowed;
+        }
         
         /* Style pour les cercles de couleur */
         .color-circle {
@@ -80,12 +83,13 @@
         <div>
             <h1 class="text-4xl font-extrabold text-gray-900 mb-2">{{ $product->name }}</h1>
             
-            <form id="product-form" action="{{ route('cart.add', ['product' => $product->id]) }}" method="POST">
-                @csrf
+            {{-- 🚨 VÉRIFICATION CRITIQUE DU FORMULAIRE --}}
+            <form id="product-form" action="{{ route('cart.add') }}" method="POST">
+                @csrf 
                 <div class="product-info-container">
                     <div class="mb-4">
                         <p id="variant-price" class="text-3xl font-bold text-red-600 mb-2">
-                           Sélectionnez une variante
+                            Sélectionnez une variante
                         </p>
                         <p id="variant-stock" class="text-sm text-gray-500"></p>
                     </div>
@@ -95,7 +99,6 @@
                         $availableSizes = $product->variants->pluck('size')->unique()->filter()->values();
                         $availableWeights = $product->variants->pluck('weight')->unique()->filter()->values();
                         
-                        // Mappage des noms de couleurs en français vers les codes hexadécimaux
                         $colorMap = [
                             'rouge' => '#ef4444', 'bleu' => '#3b82f6', 'vert' => '#22c55e', 
                             'jaune' => '#facc15', 'noir' => '#000000', 'blanc' => '#ffffff', 
@@ -110,9 +113,9 @@
                             <div id="color-options" class="flex flex-wrap gap-3">
                                 @foreach($availableColors as $color)
                                     <div class="color-circle variant-option" 
-                                         data-attribute="color" 
-                                         data-value="{{ $color }}" 
-                                         style="background-color: {{ $colorMap[strtolower($color)] ?? $color }};">
+                                        data-attribute="color" 
+                                        data-value="{{ $color }}" 
+                                        style="background-color: {{ $colorMap[strtolower($color)] ?? $color }};">
                                     </div>
                                 @endforeach
                             </div>
@@ -125,9 +128,9 @@
                             <div id="weight-options" class="flex flex-wrap gap-2">
                                 @foreach($availableWeights as $weight)
                                     <div class="variant-option border-2 rounded-lg px-4 py-2 text-sm font-medium" 
-                                         data-attribute="weight" 
-                                         data-value="{{ $weight }}">
-                                         {{ $weight }}
+                                        data-attribute="weight" 
+                                        data-value="{{ $weight }}">
+                                        {{ $weight }}
                                     </div>
                                 @endforeach
                             </div>
@@ -140,9 +143,9 @@
                             <div id="size-options" class="flex flex-wrap gap-2">
                                 @foreach($availableSizes as $size)
                                     <div class="variant-option border-2 rounded-lg px-4 py-2 text-sm font-medium" 
-                                         data-attribute="size" 
-                                         data-value="{{ $size }}">
-                                         {{ $size }}
+                                        data-attribute="size" 
+                                        data-value="{{ $size }}">
+                                        {{ $size }}
                                     </div>
                                 @endforeach
                             </div>
@@ -154,19 +157,23 @@
                         <input type="number" name="quantity" id="quantity" value="1" min="1" max="100" class="border border-gray-300 rounded-lg py-2 px-4 w-24 text-center focus:outline-none focus:ring-2 focus:ring-red-500" disabled>
                     </div>
 
-                    <input type="hidden" name="variant_id" id="variant-id">
+                    <input type="hidden" name="product_id" value="{{ $product->id }}">
+
+                    <input type="hidden" name="variant_id" id="variant-id"> 
+                    
                     <button type="submit" id="add-to-cart-btn" class="bg-red-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-red-700 transition duration-300" disabled>
                         Ajouter au panier
                     </button>
                 </div>
             </form>
+            {{-- FIN DE LA SECTION CRITIQUE DU FORMULAIRE --}}
 
             <h2 class="text-xl font-bold text-red-600 mb-2 mt-8">Description du produit</h2>
-            <p class="text-gray-700 mb-6 leading-relaxed">{{ $product->description }}</p>
+            <p class="text-gray-700 mb-6 leading-relaxed">{!! nl2br(e($product->description)) !!}</p>
 
             <div class="mt-12">
                 <h3 class="font-bold text-2xl text-gray-800 mb-4">Informations techniques et de sécurité</h3>
-                <p class="text-gray-700 mb-6 leading-relaxed">{{ $product->technical_info }}</p>
+                <p class="text-gray-700 mb-6 leading-relaxed">{!! nl2br(e($product->technical_info)) !!}</p>
             </div>
         </div>
     </div>
@@ -197,30 +204,36 @@
         size: document.getElementById('size-options'),
         weight: document.getElementById('weight-options'),
     };
+    
+    // Déterminer le nombre exact d'attributs qui DOIVENT être sélectionnés pour ce produit
+    const requiredAttributes = Object.keys(attributeContainers).filter(key => attributeContainers[key]).length;
+
 
     function updateUI() {
         const selectedCount = Object.values(selectedAttributes).filter(Boolean).length;
-        const totalOptionalAttributes = Object.keys(attributeContainers).filter(key => attributeContainers[key]).length;
-
-        // On cherche une variante qui correspond aux sélections actuelles
+        
         let exactVariant = variants.find(variant => {
-            return (selectedAttributes.color === null || variant.color === selectedAttributes.color) &&
-                   (selectedAttributes.size === null || variant.size === selectedAttributes.size) &&
-                   (selectedAttributes.weight === null || variant.weight === selectedAttributes.weight);
+             const colorMatch = selectedAttributes.color === null || variant.color === selectedAttributes.color;
+             const sizeMatch = selectedAttributes.size === null || variant.size === selectedAttributes.size;
+             const weightMatch = selectedAttributes.weight === null || variant.weight === selectedAttributes.weight;
+             
+             return colorMatch && sizeMatch && weightMatch;
         });
 
-        // Mettre à jour l'affichage du prix, du stock et l'état du bouton
-        if (exactVariant && exactVariant.stock > 0 && selectedCount === totalOptionalAttributes) {
+        if (exactVariant && exactVariant.stock > 0 && selectedCount === requiredAttributes) {
+            
             const price = exactVariant.promotion_price || exactVariant.price;
             priceDisplay.innerHTML = `
                 <p class="text-3xl font-bold text-red-600 mb-2">${price.toLocaleString('fr-FR')} FCFA</p>
                 ${exactVariant.promotion_price ? `<p class="text-xl text-gray-500 line-through mb-1">${exactVariant.price.toLocaleString('fr-FR')} FCFA</p>` : ''}
             `;
             stockDisplay.textContent = `Stock disponible: ${exactVariant.stock}`;
+            
             quantityInput.max = exactVariant.stock;
             quantityInput.disabled = false;
             addToCartBtn.disabled = false;
             variantIdInput.value = exactVariant.id;
+            
         } else {
             priceDisplay.textContent = 'Sélectionnez une variante';
             stockDisplay.textContent = '';
@@ -229,7 +242,6 @@
             variantIdInput.value = '';
         }
 
-        // Mettre à jour l'état des options pour les rendre cliquables ou non
         Object.keys(attributeContainers).forEach(attr => {
             if (attributeContainers[attr]) {
                 updateOptionAvailability(attr);
@@ -248,12 +260,19 @@
                 (tempSelected.color === null || variant.color === tempSelected.color) &&
                 (tempSelected.size === null || variant.size === tempSelected.size) &&
                 (tempSelected.weight === null || variant.weight === tempSelected.weight)
+                && variant.stock > 0
             );
 
             if (isAvailable) {
                 option.classList.remove('opacity-50', 'pointer-events-none');
             } else {
                 option.classList.add('opacity-50', 'pointer-events-none');
+            }
+            
+            if (option.classList.contains('opacity-50') && option.classList.contains('selected')) {
+                 selectedAttributes[currentAttribute] = null;
+                 option.classList.remove('selected');
+                 updateUI();
             }
         });
     }
@@ -263,7 +282,6 @@
         const attribute = selectedElement.dataset.attribute;
         const value = selectedElement.dataset.value;
 
-        // Toggle la sélection
         if (selectedAttributes[attribute] === value) {
             selectedAttributes[attribute] = null;
             selectedElement.classList.remove('selected');
@@ -282,6 +300,15 @@
         option.addEventListener('click', handleOptionClick);
     });
 
-    // Appel initial pour définir l'état de la page
+    // ÉCOUTEUR CRITIQUE : VÉRIFIER QU'AUCUN ÉVÉNEMENT NE BLOQUE LA SOUMISSION
+    form.addEventListener('submit', function(e) {
+        // Optionnel : un dernier contrôle JavaScript si nécessaire, mais NE PAS utiliser e.preventDefault() ici.
+        // Si addToCartBtn est disabled, le formulaire ne devrait pas être soumis.
+        if (addToCartBtn.disabled) {
+            e.preventDefault();
+            alert('Veuillez sélectionner une variante disponible.');
+        }
+    });
+
     updateUI();
 </script>
