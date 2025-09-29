@@ -3,21 +3,38 @@
         const container = document.getElementById('variants-container');
         const addButton = document.getElementById('add-variant');
         
-        // Fonction pour créer une ligne de variante (mise à jour pour 7 colonnes)
+        // Fonction pour créer une ligne de variante (utilise une grille de 14 colonnes)
         function createVariantRow() {
             const row = document.createElement('div');
-            row.className = 'variant-row grid grid-cols-7 gap-3 items-center';
+            // La classe CSS doit correspondre à la grille (grid-cols-14) et la taille minimale (min-w-[1200px])
+            row.className = 'variant-row grid grid-cols-14 gap-3 items-center min-w-[1200px]'; 
             row.innerHTML = `
                 <div class="col-span-2">
-                    <input type="text" name="variant_names[]" placeholder="Ex: Taille M - Bleu" 
+                    <input type="text" name="variant_sizes[]" placeholder="Taille (Ex: S, XL, 42)" 
                            class="block w-full border border-gray-300 rounded-lg p-2 text-sm" required>
                 </div>
                 <div class="col-span-1">
-                    <input type="number" step="100" min="0" name="variant_prices[]" placeholder="Prix" 
+                    <input type="text" name="variant_colors[]" placeholder="Couleur" 
+                           class="block w-full border border-gray-300 rounded-lg p-2 text-sm">
+                </div>
+                <div class="col-span-1">
+                    <input type="text" name="variant_weights[]" placeholder="Poids" 
+                           class="block w-full border border-gray-300 rounded-lg p-2 text-sm">
+                </div>
+                <div class="col-span-1">
+                    <input type="number" step="100" min="0" name="variant_prices[]" placeholder="Prix Normal" 
                            class="block w-full border border-gray-300 rounded-lg p-2 text-sm" required>
                 </div>
-                <div class="col-span-2">
+                <div class="col-span-1">
                     <input type="number" step="100" min="0" name="variant_promotion_prices[]" placeholder="Prix Promo" 
+                           class="block w-full border border-gray-300 rounded-lg p-2 text-sm">
+                </div>
+                <div class="col-span-3">
+                    <input type="date" name="variant_promo_start_dates[]" placeholder="Début Promo" 
+                           class="block w-full border border-gray-300 rounded-lg p-2 text-sm">
+                </div>
+                <div class="col-span-3">
+                    <input type="date" name="variant_promo_end_dates[]" placeholder="Fin Promo" 
                            class="block w-full border border-gray-300 rounded-lg p-2 text-sm">
                 </div>
                 <div class="col-span-1">
@@ -34,7 +51,7 @@
         // Ajouter une nouvelle ligne
         addButton.addEventListener('click', createVariantRow);
 
-        // Supprimer une ligne (événement délégué sur le conteneur)
+        // Supprimer une ligne
         container.addEventListener('click', function(e) {
             if (e.target.classList.contains('remove-variant')) {
                 const currentRowCount = container.querySelectorAll('.variant-row').length;

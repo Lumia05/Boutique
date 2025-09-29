@@ -53,45 +53,79 @@ class ProductController extends Controller
     /**
      * Enregistre un nouveau produit et ses variantes.
      */
-     public function store(Request $request)
+
+    // -----------------------------------------------------------
+    // MÉTHODE STORE (CRÉATION)
+    // -----------------------------------------------------------
+
+    /**
+     * Enregistre un nouveau produit et ses variantes.
+     */
+    public function store(Request $request)
     {
         $request->validate([
+            // Validation du Produit
+            'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
-            'name' => 'required|string|max:255|unique:products,name',
             'description' => 'required|string',
-            'is_active' => 'nullable|in:1,0', 
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'image' => 'nullable|image|max:2048', // Max 2MB
+            'is_active' => 'nullable|boolean',
             
-            // Validation des listes de variantes
-            'variant_names.*' => 'required|string|max:100',
+            // Validation des listes de Variantes
+            'variant_sizes.*' => 'required|string|max:100',
+            'variant_colors.*' => 'nullable|string|max:100',
+            'variant_weights.*' => 'nullable|string|max:100',
             'variant_prices.*' => 'required|numeric|min:0',
-            // promotion_price est optionnel et peut être null
             'variant_promotion_prices.*' => 'nullable|numeric|min:0|lt:variant_prices.*', 
+            
+            // ✅ NOUVEAU : Validation des dates de promotion
+            'variant_promo_start_dates.*' => 'nullable|date',
+            'variant_promo_end_dates.*' => 'nullable|date|after_or_equal:variant_promo_start_dates.*',
+            
             'variant_stocks.*' => 'required|integer|min:0',
         ]);
 
-        $data = $request->except(['image', '_token', 'variant_names', 'variant_prices', 'variant_promotion_prices', 'variant_stocks']);
+        // 1. Préparation et création du Produit
+        $data = $request->except([
+            'image', '_token', 
+            'variant_sizes', 'variant_colors', 'variant_weights', 
+            'variant_prices', 'variant_promotion_prices', 'variant_stocks',
+            'variant_promo_start_dates', 'variant_promo_end_dates' // EXCLUSION DES NOUVELLES DATES
+        ]);
+        
         $data['slug'] = Str::slug($request->name);
         $data['is_active'] = $request->has('is_active');
         
-        // ... (gestion de l'image)
+        if ($request->hasFile('image')) {
+             $data['image'] = $request->file('image')->store('products', 'public');
+        }
         
-        $product = Products::create($data);
+        $product = Product::create($data);
 
-        // Enregistrement des variantes
-        if ($request->has('variant_names')) {
+        // 2. Enregistrement des variantes
+        if ($request->has('variant_sizes')) {
             $variants = [];
-            foreach ($request->variant_names as $key => $name) {
-                // Vérifier la cohérence des données
-                if (isset($request->variant_prices[$key]) && isset($request->variant_stocks[$key])) {
-                    $variants[] = new \App\Models\ProductVariant([
-                        'name' => $name,
-                        'price' => $request->variant_prices[$key],
-                        // Enregistrer le prix de promotion (peut être null)
-                        'promotion_price' => $request->variant_promotion_prices[$key] ?? null,
-                        'stock' => $request->variant_stocks[$key],
-                    ]);
+            foreach ($request->variant_sizes as $key => $size) {
+                // Création d'un nom de variante agrégé (pour la base de données)
+                $name = "Taille: " . $size;
+                if (!empty($request->variant_colors[$key])) {
+                    $name .= " / Couleur: " . $request->variant_colors[$key];
                 }
+
+                $variants[] = new ProductVariant([
+                    'size' => $size,
+                    'color' => $request->variant_colors[$key] ?? null,
+                    'weight' => $request->variant_weights[$key] ?? null,
+                    'name' => $name, 
+                    'price' => $request->variant_prices[$key],
+                    'promotion_price' => $request->variant_promotion_prices[$key] ?? null,
+                    
+                    // ✅ NOUVEAU : Enregistrement des dates
+                    'promotion_start_date' => $request->variant_promo_start_dates[$key] ?? null,
+                    'promotion_end_date' => $request->variant_promo_end_dates[$key] ?? null,
+                    
+                    'stock' => $request->variant_stocks[$key],
+                ]);
             }
             $product->variants()->saveMany($variants);
         }
@@ -99,6 +133,90 @@ class ProductController extends Controller
         return redirect()->route('admin.products.index')->with('success', 'Produit et variantes créés avec succès.');
     }
 
+    // -----------------------------------------------------------
+    // MÉTHODE UPDATE (MODIFICATION)
+    // -----------------------------------------------------------
+
+    /**
+     * Met à jour un produit existant et ses variantes.
+     */
+    public function update(Request $request, Product $product)
+    {
+        $request->validate([
+            // Validation du Produit
+            'name' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
+            'description' => 'required|string',
+            'image' => 'nullable|image|max:2048', // Max 2MB
+            'is_active' => 'nullable|boolean',
+            
+            // Validation des listes de Variantes
+            'variant_sizes.*' => 'required|string|max:100',
+            'variant_colors.*' => 'nullable|string|max:100',
+            'variant_weights.*' => 'nullable|string|max:100',
+            'variant_prices.*' => 'required|numeric|min:0',
+            'variant_promotion_prices.*' => 'nullable|numeric|min:0|lt:variant_prices.*', 
+            
+            // ✅ NOUVEAU : Validation des dates de promotion
+            'variant_promo_start_dates.*' => 'nullable|date',
+            'variant_promo_end_dates.*' => 'nullable|date|after_or_equal:variant_promo_start_dates.*',
+            
+            'variant_stocks.*' => 'required|integer|min:0',
+        ]);
+
+        // 1. Préparation et mise à jour du Produit
+        $data = $request->except([
+            'image', '_token', '_method',
+            'variant_sizes', 'variant_colors', 'variant_weights', 
+            'variant_prices', 'variant_promotion_prices', 'variant_stocks',
+            'variant_promo_start_dates', 'variant_promo_end_dates' // EXCLUSION DES NOUVELLES DATES
+        ]);
+        
+        $data['slug'] = Str::slug($request->name);
+        $data['is_active'] = $request->has('is_active');
+        
+        if ($request->hasFile('image')) {
+            // Suppression de l'ancienne image
+            if ($product->image) {
+                Storage::disk('public')->delete($product->image);
+            }
+             $data['image'] = $request->file('image')->store('products', 'public');
+        }
+        
+        $product->update($data);
+        
+        // 2. Suppression et recréation des variantes (Approche simple pour l'édition)
+        $product->variants()->delete();
+        
+        if ($request->has('variant_sizes')) {
+            $variants = [];
+            foreach ($request->variant_sizes as $key => $size) {
+                // Création d'un nom de variante agrégé
+                $name = "Taille: " . $size;
+                if (!empty($request->variant_colors[$key])) {
+                    $name .= " / Couleur: " . $request->variant_colors[$key];
+                }
+
+                $variants[] = new ProductVariant([
+                    'size' => $size,
+                    'color' => $request->variant_colors[$key] ?? null,
+                    'weight' => $request->variant_weights[$key] ?? null,
+                    'name' => $name, 
+                    'price' => $request->variant_prices[$key],
+                    'promotion_price' => $request->variant_promotion_prices[$key] ?? null,
+                    
+                    // ✅ NOUVEAU : Enregistrement des dates
+                    'promotion_start_date' => $request->variant_promo_start_dates[$key] ?? null,
+                    'promotion_end_date' => $request->variant_promo_end_dates[$key] ?? null,
+                    
+                    'stock' => $request->variant_stocks[$key],
+                ]);
+            }
+            $product->variants()->saveMany($variants);
+        }
+
+        return redirect()->route('admin.products.index')->with('success', 'Produit et variantes mis à jour avec succès.');
+    }
     public function edit(Products $product)
     {
         // Charger explicitement les variantes pour la vue d'édition
@@ -107,54 +225,20 @@ class ProductController extends Controller
         return view('admin.products.edit', compact('product', 'categories'));
     }
 
-    /**
-     * Met à jour un produit existant et ses variantes.
-     */
-   public function update(Request $request, Products $product)
+
+    public function destroy(Product $product)
     {
-        $request->validate([
-            'category_id' => 'required|exists:categories,id',
-            'name' => 'required|string|max:255|unique:products,name,' . $product->id, 
-            'description' => 'required|string',
-            'is_active' => 'nullable|in:1,0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            
-            // Validation des listes de variantes
-            'variant_names.*' => 'required|string|max:100',
-            'variant_prices.*' => 'required|numeric|min:0',
-            'variant_promotion_prices.*' => 'nullable|numeric|min:0|lt:variant_prices.*', 
-            'variant_stocks.*' => 'required|integer|min:0',
-        ]);
-
-        $data = $request->except(['image', '_token', '_method', 'variant_names', 'variant_prices', 'variant_promotion_prices', 'variant_stocks']);
-        $data['slug'] = Str::slug($request->name);
-        $data['is_active'] = $request->has('is_active');
-        
-        // ... (gestion de l'image)
-
-        $product->update($data);
-        
-        // 1. Suppression de toutes les anciennes variantes
-        $product->variants()->delete();
-        
-        // 2. Enregistrement des nouvelles variantes
-        if ($request->has('variant_names')) {
-            $variants = [];
-            foreach ($request->variant_names as $key => $name) {
-                if (isset($request->variant_prices[$key]) && isset($request->variant_stocks[$key])) {
-                    $variants[] = new \App\Models\ProductVariant([
-                        'name' => $name,
-                        'price' => $request->variant_prices[$key],
-                        'promotion_price' => $request->variant_promotion_prices[$key] ?? null,
-                        'stock' => $request->variant_stocks[$key],
-                    ]);
-                }
-            }
-            $product->variants()->saveMany($variants);
+        // 1. Suppression de l'image du produit (si elle existe)
+        if ($product->image) {
+            Storage::disk('public')->delete($product->image);
         }
 
-        return redirect()->route('admin.products.index')->with('success', 'Produit et variantes mis à jour avec succès.');
+        // 2. Suppression du produit. 
+        // Les variantes associées (ProductVariant) seront automatiquement supprimées
+        // par l'effet de la contrainte 'onDelete('cascade')' définie dans la migration.
+        $product->delete();
+
+        return redirect()->route('admin.products.index')->with('success', 'Le produit a été supprimé avec succès.');
     }
 
-    // ... (méthode destroy inchangée) ...
 }

@@ -1,11 +1,11 @@
 @extends('layouts.admin')
 
-@section('title', 'Créer une Catégorie')
-@section('page-title', 'Ajouter une Nouvelle Catégorie')
+@section('title', 'Ajouter une Catégorie')
+@section('page-title', 'Créer une Nouvelle Catégorie')
 
 @section('content')
 
-    <div class="bg-white p-6 rounded-xl shadow-lg max-w-2xl mx-auto">
+    <div class="bg-white p-6 rounded-xl shadow-lg max-w-lg mx-auto">
         
         <form action="{{ route('admin.categories.store') }}" method="POST">
             @csrf
@@ -15,33 +15,32 @@
                 <input type="text" name="name" id="name" required
                     value="{{ old('name') }}"
                     class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 p-2"
-                    placeholder="Ex: Équipements de Protection Individuelle"
+                    placeholder="Ex: Électronique, Vêtements pour hommes"
                 >
                 @error('name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
-            
-            <div class="mb-5">
-                <label for="parent_id" class="block text-sm font-medium text-gray-700">Catégorie Parent (Optionnel)</label>
-                <select name="parent_id" id="parent_id" 
-                    class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2"
-                >
-                    <option value="">-- Aucune (Catégorie Principale) --</option>
-                    {{-- $parentCategories est envoyé par le CategoryController pour les catégories de niveau supérieur --}}
-                    @foreach ($parentCategories as $parent)
-                        <option value="{{ $parent->id }}" {{ old('parent_id') == $parent->id ? 'selected' : '' }}>
-                            {{ $parent->name }}
-                        </option>
-                    @endforeach
-                </select>
-                @error('parent_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-            </div>
 
             <div class="mb-6">
-                <label for="description" class="block text-sm font-medium text-gray-700">Description (Optionnel)</label>
-                <textarea name="description" id="description" rows="3"
+                <label for="parent_id" class="block text-sm font-medium text-gray-700">Catégorie Parente (Optionnel)</label>
+                <select name="parent_id" id="parent_id"
                     class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 p-2"
-                >{{ old('description') }}</textarea>
-                @error('description') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                >
+                    <option value="">-- Aucune (Catégorie Principale) --</option>
+                    
+                    {{-- Boucle utilisant la variable $parentCategories passée par le contrôleur --}}
+                    @foreach ($parentCategories as $parentCategory)
+                        <option value="{{ $parentCategory->id }}" {{ old('parent_id') == $parentCategory->id ? 'selected' : '' }}>
+                            {{ $parentCategory->name }}
+                        </option>
+                        
+                        {{-- Optionnel : Afficher les sous-catégories existantes comme non sélectionnables si vous le souhaitez --}}
+                        {{-- @foreach($parentCategory->children as $child)
+                            <option value="{{ $child->id }}" disabled>-- {{ $child->name }} (Sous-catégorie) --</option>
+                        @endforeach --}}
+                    @endforeach
+                    
+                </select>
+                @error('parent_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
 
             <div class="pt-4 border-t border-gray-200 flex justify-end">

@@ -4,67 +4,55 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Setting;
-use Illuminate\Support\Facades\Auth; // Nécessaire pour le contournement Auth::check()
+use App\Models\Setting; // Assurez-vous d'avoir un modèle Setting pour les paires clé-valeur
+use Illuminate\Validation\ValidationException;
 
 class SettingController extends Controller
 {
-    // CONTOURNEMENT : Vérification manuelle de la connexion dans le constructeur.
-    public function __construct()
-    {
-        // Si l'utilisateur n'est PAS connecté, on le redirige vers le formulaire de connexion.
-        if (!Auth::check()) {
-            redirect()->route('login')->send();
-            exit();
-        }
-    }
-
     /**
-     * Affiche le formulaire de gestion des paramètres (Contacts experts).
+     * Affiche la vue de configuration générale (Responsable/Horaires).
      */
     public function index()
     {
-        // firstOrCreate récupère l'unique ligne existante ou la crée si elle n'existe pas.
-        $setting = Setting::firstOrCreate([]); 
+        // Récupérer toutes les paires clé-valeur et les transformer en tableau associatif
+        $settings = Setting::pluck('value', 'key')->all();
 
-        // Renvoie à la vue qui utilise votre layout d'administration.
-        return view('admin.settings.index', compact('setting'));
+        // Si vous avez besoin de passer des experts pour une raison quelconque (par ex. le menu)
+        // Mais nous allons le retirer pour le garder propre.
+        // On ne passe que les settings.
+        
+        return view('admin.settings.index', compact('settings'));
     }
 
     /**
-     * Met à jour les paramètres (Contacts experts).
+     * Met à jour les paramètres généraux.
      */
-     public function store(Request $request)
+    public function update(Request $request)
     {
-        // 1. Validation des données
-        $request->validate([
-            'expert1_name' => 'nullable|string|max:255',
-            'expert1_email' => 'nullable|email|max:255',
-            'expert1_phone' => 'nullable|string|max:20',
-            'expert1_expertise' => 'nullable|string|max:255', // Validation ajoutée
-            
-            'expert2_name' => 'nullable|string|max:255',
-            'expert2_email' => 'nullable|email|max:255',
-            'expert2_phone' => 'nullable|string|max:20',
-            'expert2_expertise' => 'nullable|string|max:255', // Validation ajoutée
-
-            'opening_time' => 'nullable|date_format:H:i', // Validation Heure (ex: 09:00)
-            'closing_time' => 'nullable|date_format:H:i|after:opening_time', // Validation Heure
-            'closing_days' => 'nullable|string|max:255',
-            'footer_text' => 'nullable|string|max:500',
+        // 1. Validation des champs généraux
+        $validated = $request->validate([
+            'shop_email'          => ['required', 'string', 'email', 'max:255'],
+            'shop_phone'          => ['required', 'string', 'max:30'],
+            'shop_opening_time'   => ['required', 'date_format:H:i'],
+            'shop_closing_time'   => ['required', 'date_format:H:i', 'after:shop_opening_time'],
         ]);
 
-        // 2. Récupération ou création de l'unique ligne
-        $setting = Setting::firstOrCreate([]);
+        try {
+            // 2. Sauvegarde des paires clé-valeur
+            foreach ($validated as $key => $value) {
+                Setting::updateOrCreate(
+                    ['key' => $key],
+                    ['value' => $value]
+                );
+            }
+            
+            return redirect()->route('admin.settings.index')->with('success', 'Les informations générales ont été mises à jour avec succès.');
 
-        // 3. Mise à jour des données (Utilise request()->all() pour la simplicité, 
-        // ou la liste complète des champs 'fillable' si vous préférez)
-        $setting->update($request->only([
-            'expert1_name', 'expert1_email', 'expert1_phone', 'expert1_expertise',
-            'expert2_name', 'expert2_email', 'expert2_phone', 'expert2_expertise',
-            'opening_time', 'closing_time', 'closing_days', 'footer_text',
-        ]));
-
-        return redirect()->route('admin.settings.index')->with('success', 'Les paramètres de la boutique ont été mis à jour avec succès.');
+        } catch (\Exception $e) {
+            // Gérer les erreurs de base de données ou autres
+            return redirect()->back()->withInput()->with('error', 'Une erreur est survenue lors de l\'enregistrement des paramètres.');
+        }
     }
+    
+    // La méthode 'edit' n'est plus nécessaire car l'édition se fait sur index.blade.php
 }

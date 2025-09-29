@@ -1,7 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth; // Nécessaire pour la redirection manuelle
+use Illuminate\Support\Facades\Auth;
+ // Nécessaire pour la redirection manuelle
 
 // =========================================================================
 // CONTROLEURS
@@ -21,6 +22,9 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\SettingController; 
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ExpertContactController;
+use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\Admin\CustomerController;
 // ... (autres contrôleurs Admin)
 
 
@@ -38,8 +42,20 @@ Route::get('/realisations', [PublicController::class, 'realisations'])->name('re
 // Routes Commerce Électronique (Client)
 Route::get('/produits', [ProductsController::class, 'index'])->name('products.index');
 Route::get('/produits/{product}', [ProductsController::class, 'show'])->name('products.show');
+// Afficher le contenu du panier
 Route::get('/panier', [CartController::class, 'index'])->name('cart.index');
-Route::get('/caissse', [CheckoutController::class, 'index'])->name('checkout.index');
+
+// Ajouter un produit au panier (c'est la route 'cart.add' que vous recherchez)
+// On utilise POST ou PUT/PATCH pour les modifications de données.
+Route::post('/panier/ajouter', [CartController::class, 'add'])->name('cart.add');
+// Mettre à jour la quantité d'un article spécifique
+Route::post('/panier/maj', [CartController::class, 'update'])->name('cart.update'); // ou use PUT/PATCH
+
+// Retirer un article spécifique du panier
+Route::delete('/panier/retirer/{product_id}', [CartController::class, 'remove'])->name('cart.remove');
+
+// Vider complètement le panier
+Route::delete('/panier/vider', [CartController::class, 'clear'])->name('cart.clear');
 
 
 /*
@@ -69,16 +85,36 @@ Route::prefix('admin')->name('admin.')->group(function () {
     // 1. Tableau de bord principal
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
-    // 2. Gestion des Paramètres/Experts (Prochaine étape)
-    Route::resource('settings', SettingController::class)->only(['index', 'store']); 
 
-    // 2. Gestion des Catégories
+    // ✅ 2. Gestion des Paramètres Uniques (Email, Téléphone, Heures)
+    Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
+    Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
+    Route::get('/settings/edit', [SettingController::class, 'edit'])->name('admin.settings.edit');
+
+// ✅ 3. Gestion des Experts Multiples (CRUD)
+    Route::resource('expert-contacts', ExpertContactController::class)
+        // Nous excluons 'show' car vous n'avez pas besoin d'une page de détail individuelle
+        ->except(['show']) 
+        // Cette ligne garantit que les noms des routes seront :
+        // admin.expert_contacts.index, admin.expert_contacts.store, etc.
+        ->names('expert_contacts'); 
+// --- FIN DU BLOC EXPERT CONTACTS ---
+
+    // 4. Gestion des Catégories
     Route::resource('categories', CategoryController::class); 
 
-    // 3. Gestion des Produits
+    // 5. Gestion des Produits
     Route::resource('products', ProductController::class);
     Route::get('products/{product}/variants', [ProductController::class, 'showVariants'])->name('products.variants.index');
 
-
+     // GESTION DES COMMANDES
+    Route::resource('orders', OrderController::class)
+        ->only(['index', 'show', 'update', 'destroy'])
+        ->names('orders');
+        
+    // GESTION DES CLIENTS
+    Route::resource('customers', CustomerController::class) // Changement d'URI
+        ->only(['index', 'show', 'update'])
+        ->names('customers'); // Changement de nommage
     // ... (autres Route::resource futures)
 });

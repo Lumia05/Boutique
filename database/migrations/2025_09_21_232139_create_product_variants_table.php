@@ -15,6 +15,8 @@ return new class extends Migration
             $table->string('color')->nullable();
             $table->decimal('price', 10, 2);
             $table->decimal('promotion_price', 10, 2)->nullable();
+            $table->timestamp('promotion_start_date')->nullable(); 
+            $table->timestamp('promotion_end_date')->nullable();
             $table->integer('stock');
             $table->timestamps();
         });

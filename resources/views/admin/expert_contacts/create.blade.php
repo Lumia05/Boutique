@@ -7,7 +7,7 @@
 
     <div class="max-w-xl mx-auto">
         
-        {{-- Conteneur Principal : Blanc, centré, et professionnel --}}
+        {{-- Conteneur Principal : Blanc, centré, professionnel --}}
         <div class="p-8 bg-white rounded-xl shadow-lg border-t-4 border-red-600">
             
             <h2 class="text-2xl font-bold text-gray-800 mb-6 pb-4 border-b">
@@ -19,9 +19,7 @@
 
                 <div class="space-y-6">
                     
-                    {{-- 1. DÉTAILS DE BASE (Nom et Rôle OBLIGATOIRES) --}}
-                    
-                    {{-- Nom Complet --}}
+                    {{-- Nom Complet (OBLIGATOIRE) --}}
                     <div>
                         <label for="name" class="block text-base font-medium text-gray-700">
                             Nom de l'Expert <span class="text-red-500">*</span>
@@ -34,7 +32,7 @@
                         @error('name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     
-                    {{-- Rôle --}}
+                    {{-- Rôle (OBLIGATOIRE) --}}
                     <div>
                         <label for="role" class="block text-base font-medium text-gray-700">
                             Rôle sur le Site <span class="text-red-500">*</span>
@@ -104,7 +102,7 @@
 
                     {{-- Boutons d'Action --}}
                     <div class="pt-6 border-t border-gray-200 flex justify-end space-x-3">
-                        <a href="{{ route('admin.settings.index') }}" 
+                        <a href="{{ route('admin.expert_contacts.index') }}" 
                             class="py-3 px-6 border border-gray-300 text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 shadow-sm transition duration-150">
                             Annuler
                         </a>

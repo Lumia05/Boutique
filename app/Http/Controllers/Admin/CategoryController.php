@@ -52,9 +52,13 @@ class CategoryController extends Controller
     /**
      * Affiche le formulaire de création de catégorie.
      */
-    public function create()
+   public function create()
     {
-        return view('admin.categories.create');
+        // C'est ici que la variable est définie
+        $parentCategories = Category::whereNull('parent_id')->get();
+        
+        // Et elle est correctement passée à la vue
+        return view('admin.categories.create', compact('parentCategories'));
     }
 
     /**
@@ -82,7 +86,11 @@ class CategoryController extends Controller
      */
     public function edit(Category $category)
     {
-        return view('admin.categories.edit', compact('category'));
+        // ✅ LA VARIABLE EST CORRECTEMENT DÉFINIE ICI
+        $parentCategories = Category::whereNull('parent_id')->get();
+        
+        // ✅ ET ELLE EST CORRECTEMENT PASSÉE À LA VUE
+        return view('admin.categories.edit', compact('category', 'parentCategories'));
     }
 
     /**

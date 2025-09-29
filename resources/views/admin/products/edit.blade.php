@@ -5,7 +5,7 @@
 
 @section('content')
 
-    <div class="bg-white p-6 rounded-xl shadow-lg max-w-4xl mx-auto">
+    <div class="bg-white p-6 rounded-xl shadow-lg max-w-7xl mx-auto">
         
         <form action="{{ route('admin.products.update', $product) }}" method="POST" enctype="multipart/form-data">
             @csrf
@@ -39,50 +39,79 @@
                 </div>
             </div>
 
-            <div class="mb-6 md:col-span-2">
-                <h3 class="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Variantes (Prix, Promotion, Stock) <span class="text-red-500">*</span></h3>
+            <div class="mb-6 md:col-span-2 overflow-x-auto">
+                <h3 class="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Variantes (Taille, Couleur, Prix, Promotion, Stock) <span class="text-red-500">*</span></h3>
                 
-                <div class="grid grid-cols-7 gap-3 mb-2 text-xs font-semibold text-gray-600">
-                    <div class="col-span-2">Nom de la Variante</div>
-                    <div class="col-span-1">Prix Normal (XAF)</div>
-                    <div class="col-span-2">Prix Promotionnel (Optionnel)</div>
+                {{-- Entêtes de la grille 14 colonnes --}}
+                <div class="min-w-[1200px] grid grid-cols-14 gap-3 mb-2 text-xs font-semibold text-gray-600">
+                    <div class="col-span-2">Taille / Modèle</div>
+                    <div class="col-span-1">Couleur (Opt.)</div>
+                    <div class="col-span-1">Poids (Opt.)</div>
+                    <div class="col-span-1">Prix Normal</div>
+                    <div class="col-span-1">Prix Promo</div>
+                    <div class="col-span-3">Début Promo (Opt.)</div>
+                    <div class="col-span-3">Fin Promo (Opt.)</div>
                     <div class="col-span-1">Stock</div>
-                    <div class="col-span-1"></div> {{-- Pour le bouton supprimer --}}
+                    <div class="col-span-1"></div> {{-- Action --}}
                 </div>
                 
-                <div id="variants-container" class="space-y-3">
+                <div id="variants-container" class="space-y-3 min-w-[1200px]">
                     
                     @php
                         // Logique pour utiliser les données OLD en cas d'erreur ou les données existantes du produit
-                        $variantsData = old('variant_names') ? 
-                            collect(old('variant_names'))->map(function ($name, $key) {
+                        $variantsData = old('variant_sizes') ? 
+                            collect(old('variant_sizes'))->map(function ($size, $key) {
                                 return (object) [
-                                    'name' => $name, 
+                                    'size' => $size, 
+                                    'color' => old('variant_colors')[$key] ?? null,
+                                    'weight' => old('variant_weights')[$key] ?? null,
                                     'price' => old('variant_prices')[$key], 
                                     'promotion_price' => old('variant_promotion_prices')[$key] ?? null,
+                                    // NOUVEAU
+                                    'promotion_start_date' => old('variant_promo_start_dates')[$key] ?? null,
+                                    'promotion_end_date' => old('variant_promo_end_dates')[$key] ?? null,
+                                    // FIN NOUVEAU
                                     'stock' => old('variant_stocks')[$key]
                                 ];
                             }) : 
                             $product->variants;
 
-                        // Si le produit n'a aucune variante (cas rare), on injecte une ligne vide
+                        // Si le produit n'a aucune variante, on injecte une ligne vide pour la modification
                         if ($variantsData->isEmpty()) {
-                            $variantsData = collect([(object)['name' => '', 'price' => '', 'promotion_price' => '', 'stock' => '']]);
+                            $variantsData = collect([(object)['size' => '', 'color' => '', 'weight' => '', 'price' => '', 'promotion_price' => '', 'promotion_start_date' => '', 'promotion_end_date' => '', 'stock' => '']]);
                         }
                     @endphp
                     
                     @foreach ($variantsData as $variant)
-                        <div class="variant-row grid grid-cols-7 gap-3 items-center">
+                        {{-- Corps de la grille 14 colonnes --}}
+                        <div class="variant-row grid grid-cols-14 gap-3 items-center">
                             <div class="col-span-2">
-                                <input type="text" name="variant_names[]" value="{{ $variant->name }}" placeholder="Ex: Taille S - Noir" 
+                                <input type="text" name="variant_sizes[]" value="{{ $variant->size }}" placeholder="Taille (Ex: S, XL, 42)" 
                                        class="block w-full border border-gray-300 rounded-lg p-2 text-sm" required>
                             </div>
                             <div class="col-span-1">
-                                <input type="number" step="100" min="0" name="variant_prices[]" value="{{ $variant->price }}" placeholder="Prix" 
+                                <input type="text" name="variant_colors[]" value="{{ $variant->color }}" placeholder="Couleur" 
+                                       class="block w-full border border-gray-300 rounded-lg p-2 text-sm">
+                            </div>
+                            <div class="col-span-1">
+                                <input type="text" name="variant_weights[]" value="{{ $variant->weight }}" placeholder="Poids" 
+                                       class="block w-full border border-gray-300 rounded-lg p-2 text-sm">
+                            </div>
+                            <div class="col-span-1">
+                                <input type="number" step="100" min="0" name="variant_prices[]" value="{{ $variant->price }}" placeholder="Prix Normal" 
                                        class="block w-full border border-gray-300 rounded-lg p-2 text-sm" required>
                             </div>
-                            <div class="col-span-2">
+                            <div class="col-span-1">
                                 <input type="number" step="100" min="0" name="variant_promotion_prices[]" value="{{ $variant->promotion_price }}" placeholder="Prix Promo" 
+                                       class="block w-full border border-gray-300 rounded-lg p-2 text-sm">
+                            </div>
+                            <div class="col-span-3">
+                                {{-- Les dates doivent être formatées YYYY-MM-DD pour les champs input type="date" --}}
+                                <input type="date" name="variant_promo_start_dates[]" value="{{ $variant->promotion_start_date ? \Carbon\Carbon::parse($variant->promotion_start_date)->format('Y-m-d') : '' }}"
+                                       class="block w-full border border-gray-300 rounded-lg p-2 text-sm">
+                            </div>
+                            <div class="col-span-3">
+                                <input type="date" name="variant_promo_end_dates[]" value="{{ $variant->promotion_end_date ? \Carbon\Carbon::parse($variant->promotion_end_date)->format('Y-m-d') : '' }}" 
                                        class="block w-full border border-gray-300 rounded-lg p-2 text-sm">
                             </div>
                             <div class="col-span-1">
@@ -90,8 +119,7 @@
                                        class="block w-full border border-gray-300 rounded-lg p-2 text-sm" required>
                             </div>
                             <div class="col-span-1 text-right">
-                                {{-- Bouton Supprimer uniquement s'il y a plus d'une variante ou si c'est une ligne de données OLD (pour éviter de supprimer la dernière ligne nécessaire) --}}
-                                @if (count($variantsData) > 1 || old('variant_names'))
+                                @if (count($variantsData) > 1 || old('variant_sizes'))
                                     <button type="button" class="remove-variant text-red-600 hover:text-red-900 text-sm">Supprimer</button>
                                 @endif
                             </div>
@@ -103,9 +131,11 @@
                     + Ajouter une Variante
                 </button>
 
-                @error('variant_names.*') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                @error('variant_sizes.*') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 @error('variant_prices.*') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 @error('variant_promotion_prices.*') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                @error('variant_promo_start_dates.*') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                @error('variant_promo_end_dates.*') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 @error('variant_stocks.*') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
             <div class="mb-6">
@@ -132,7 +162,6 @@
                     >
                     @error('image') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
-
                 <div class="flex items-center pt-6 md:pt-0">
                     <input id="is_active" name="is_active" type="checkbox" value="1" 
                         {{ old('is_active', $product->is_active) ? 'checked' : '' }} 
@@ -157,7 +186,6 @@
 
     </div>
 
-    {{-- Script JavaScript OBLIGATOIRE pour la gestion dynamique des lignes --}}
     @include('admin.products.variant_script')
 
 @endsection

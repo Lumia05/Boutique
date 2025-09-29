@@ -50,13 +50,15 @@
                 Produits
             </a>
 
-            <a href="#" class="menu-item">Commandes (À Faire)</a>
+            <a href="{{ route ('admin.orders.index') }}" class="menu-item">Commandes</a>
+            <a href="{{ route ('admin.customers.index') }}" class="menu-item">Clients</a>
 
             <h3 class="text-xs font-semibold text-gray-500 uppercase pt-4 pb-1 px-4">Configuration</h3>
             <a href="{{ route('admin.settings.index') }}" class="menu-item @if(Request::is('admin/settings')) bg-gray-700 @endif">
-                Paramètres & Contacts
-            </a>
+                Paramètres & Contacts</a>
             
+            <a href="{{ route('admin.expert_contacts.index') }}" class="menu-item @if(Request::is('admin/expert_contacts')) bg-gray-700 @endif">
+                Experts</a>
             </nav>
             <style>
                 .menu-item {
