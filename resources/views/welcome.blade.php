@@ -27,10 +27,15 @@
                 <a href="/contact" class="text-gray-700 hover:text-red-600 transition duration-300">Contact</a>
             </nav>
             <div class="flex items-center space-x-4">
-                <a href="/panier" class="relative text-gray-700 hover:text-red-600 transition duration-300">
-                    <i class="fa fa-shopping-cart text-2xl"></i>
-                    <span class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">0</span>
-                </a>
+                 <a href="{{ route('cart.index') }}" class="relative text-gray-600 hover:text-red-600">
+                <i class="fas fa-shopping-cart text-2xl">Panier</i>
+                @php $cartCount = count(Session::get('cart', [])); @endphp
+                @if($cartCount > 0)
+                    <span class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                        {{ $cartCount }}
+                    </span>
+                @endif
+            </a>
             </div>
         </div>
     </header>

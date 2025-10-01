@@ -50,20 +50,18 @@ Route::get('/produits/{product}', [ProductsController::class, 'show'])->name('pr
 |--------------------------------------------------------------------------
 */
 
-// 1. Afficher le contenu du panier
 Route::get('/panier', [CartController::class, 'index'])->name('cart.index');
-
-// 2. Ajouter un produit/variante au panier (Route POST pour la modification de données)
 Route::post('/panier/ajouter', [CartController::class, 'add'])->name('cart.add');
+Route::post('/panier/retirer', [CartController::class, 'remove'])->name('cart.remove');
+Route::post('/panier/vider', [CartController::class, 'clear'])->name('cart.clear');
+Route::put('/panier/maj/{variantId}', [CartController::class, 'update'])->name('cart.update');
 
-// 3. Mettre à jour la quantité d'un article
-Route::post('/panier/maj', [CartController::class, 'update'])->name('cart.update');
+// Route DELETE pour retirer un article du panier
+Route::delete('/panier/retirer/{variantId}', [CartController::class, 'remove'])->name('cart.remove');
 
-// 4. Retirer un article spécifique du panier
-Route::delete('/panier/retirer/{itemId}', [CartController::class, 'remove'])->name('cart.remove');
-
-// 5. Vider complètement le panier
-Route::delete('/panier/vider', [CartController::class, 'clear'])->name('cart.clear');
+// GESTION DU CHECKOUT (Passage à la caisse)
+Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+Route::post('/checkout/commande', [CheckoutController::class, 'store'])->name('checkout.store');
 
 /*
 |--------------------------------------------------------------------------

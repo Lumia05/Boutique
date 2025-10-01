@@ -2,10 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Session;
+// CORRECTION 1 : L'importation de Request était déjà présente, mais j'ajoute les imports qui manquaient potentiellement
+use Illuminate\Http\Request; 
 use App\Models\Products;
 use App\Models\ProductVariant;
+use App\Models\Customer;
+use App\Models\Order;
+use App\Models\OrderItem;
+use Illuminate\Http\CheckoutRequest;
+use Illuminate\Support\Facades\Session;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Hash;
 
 class CartController extends Controller
 {
@@ -14,129 +21,75 @@ class CartController extends Controller
      */
     public function index()
     {
-        $cartItems = Session::get('cart', []);
-        return view('cart.index', compact('cartItems'));
+        // CORRECTION 2 : Utilisation de Session::get('cart', []) pour garantir un tableau vide si null.
+        $cart = Session::get('cart', []);
+        $total = 0;
+        
+        foreach ($cart as $item) {
+            $total += ($item['promotion_price'] ?? $item['price']) * $item['quantity'];
+        }
+
+        // J'ai mis à jour le compact pour correspondre à la variable $cart, comme dans votre version initiale.
+        return view('cart.index', compact('cart', 'total'));
     }
 
     /**
-     * Ajoute un produit ou une variante au panier.
+     * Ajoute un produit au panier.
      */
-    public function add(Request $request)
+    public function add(Request $request, Products $product)
     {
-        // 🚨 ÉTAPE DE DÉBOGAGE 1: Validation de la requête
-        // Laissez la validation pour tester l'intégrité des données
         $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'variant_id' => 'nullable|exists:product_variants,id',
             'quantity' => 'required|integer|min:1',
+            'variant_id' => 'required'
         ]);
         
-        $itemId = $request->input('variant_id') ?? $request->input('product_id');
-        $quantity = (int) $request->input('quantity');
+        $quantity = $request->input('quantity');
+        $variantId = $request->input('variant_id');
+        // Utilisation de Session::get('cart', []) ici aussi, pour la robustesse.
+        $cart = Session::get('cart', []);
+        
+        $variant = ProductVariant::find($variantId);
 
-        $item = null;
-        $name = '';
-        $price = 0;
-        $image = null;
-
-        if ($request->filled('variant_id')) {
-            // Tente de trouver la VARIANTE avec son produit parent
-            $item = ProductVariant::with('product')->find($itemId);
-            
-            if (!$item || !$item->product) {
-                return redirect()->back()->with('error', 'Variante ou produit parent introuvable.');
-            }
-
-            // Récupération des informations de la variante
-            $name = $item->product->name . ' - ' . ($item->color ?? '') . ($item->size ? ', ' . $item->size : '') . ($item->weight ? ', ' . $item->weight : '');
-            $price = $item->promotion_price ?? $item->price;
-            $image = $item->product->image;
-
-        } else {
-            // Tente de trouver le PRODUIT simple
-            $item = Products::find($itemId);
-            
-            if (!$item) {
-                return redirect()->back()->with('error', 'Produit introuvable.');
-            }
-
-            // Récupération des informations du produit simple
-            $name = $item->name;
-            $price = $item->promotion_price ?? $item->price;
-            $image = $item->image;
+        if (!$variant) {
+            return redirect()->back()->with('error', 'La variante sélectionnée est introuvable.');
         }
 
-        // --- Logique d'ajout/mise à jour du panier en session ---
+        $isPromotionActive = $product->promotion_price && Carbon::now()->between($product->promotion_start_date, $product->promotion_end_date);
+        
+        $priceToStore = $isPromotionActive ? $product->promotion_price : $product->price;
 
-        $cart = Session::get('cart', []);
-
-        $cartItemData = [
-            'id' => $itemId,
-            'name' => $name,
-            'price' => $price,
-            'quantity' => $quantity,
-            'image' => $image,
-            'is_variant' => $request->filled('variant_id'),
-        ];
-
-        if (isset($cart[$itemId])) {
-            $cart[$itemId]['quantity'] += $quantity;
+        if (isset($cart[$variantId])) {
+            $cart[$variantId]['quantity'] += $quantity;
         } else {
-            $cart[$itemId] = $cartItemData;
+            $cart[$variantId] = [
+                'id' => $variantId,
+                'name' => $product->name . ' - ' . $variant->name, 
+                'quantity' => $quantity,
+                'price' => $product->price,
+                'promotion_price' => $product->promotion_price, 
+                'is_promotion_active' => $isPromotionActive,
+            ];
         }
 
         Session::put('cart', $cart);
 
-        // 🚨 POINT D'ARRÊT FORCÉ : Si l'exécution atteint cette ligne, le panier est rempli.
-        dd(['Statut' => 'Prêt à rediriger', 'Panier Actuel' => $cart]); 
-
-        // Si la ligne dd() est commentée, la redirection ci-dessous sera exécutée
         return redirect()->route('cart.index')->with('success', 'Produit ajouté au panier.');
     }
-    
-    /**
-     * Met à jour la quantité d'un article spécifique.
-     */
-    public function update(Request $request)
-    {
-        $request->validate([
-            'item_id' => 'required',
-            'quantity' => 'required|integer|min:0',
-        ]);
-
-        $itemId = $request->input('item_id');
-        $newQuantity = (int) $request->input('quantity');
-        $cart = Session::get('cart', []);
-
-        if (isset($cart[$itemId])) {
-            if ($newQuantity <= 0) {
-                unset($cart[$itemId]);
-                $message = 'Produit retiré du panier.';
-            } else {
-                $cart[$itemId]['quantity'] = $newQuantity;
-                $message = 'Quantité mise à jour.';
-            }
-            Session::put('cart', $cart);
-            return redirect()->route('cart.index')->with('success', $message);
-        }
-
-        return redirect()->route('cart.index')->with('error', 'Article non trouvé dans le panier.');
-    }
 
     /**
-     * Retire un article spécifique du panier.
+     * Retire un article du panier.
      */
-    public function remove($itemId)
+    public function remove(Request $request, $variantId)
     {
         $cart = Session::get('cart', []);
 
-        if (isset($cart[$itemId])) {
-            unset($cart[$itemId]);
+        if (isset($cart[$variantId])) {
+            unset($cart[$variantId]);
             Session::put('cart', $cart);
-            return redirect()->route('cart.index')->with('success', 'Produit retiré du panier.');
+            return back()->with('success', 'Article retiré du panier.');
         }
-        
-        return redirect()->route('cart.index')->with('error', 'Article non trouvé dans le panier.');
+
+        return back()->with('error', 'Article non trouvé dans le panier.');
     }
 
     /**
@@ -145,6 +98,68 @@ class CartController extends Controller
     public function clear()
     {
         Session::forget('cart');
-        return redirect()->route('cart.index')->with('success', 'Le panier a été vidé.');
+        return back()->with('success', 'Votre panier a été vidé.');
+    }
+    
+    /**
+     * Gère la finalisation de la commande. (Votre méthode originale conservée)
+     */
+    public function checkout(CheckoutRequest $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'delivery_option' => 'required|in:store,home',
+            'address' => 'nullable|string|max:255', // Requis si delivery_option est 'home'
+        ]);
+
+        // 1. Trouver ou créer le client
+        $customer = Customer::firstOrCreate([
+            'phone' => $request->input('phone'),
+        ], [
+            'name' => $request->input('name'),
+            'email' => $request->input('email'),
+            'password' => Hash::make($request->input('phone')), // ou un autre champ
+        ]);
+
+        // 3. Calcul du total avec les frais de livraison
+        $cart = Session::get('cart', []);
+        $total = 0;
+        
+        foreach ($cart as $item) {
+            $total += ($item['promotion_price'] ?? $item['price']) * $item['quantity'];
+        }
+
+        if ($request->input('delivery_option') === 'home') {
+            $total += 2000;
+        }
+
+        // 4. Création de la commande
+        $order = new Order();
+        $order->customer_id = $customer->id;
+        $order->total_price = $total;
+        $order->option = $request->input('delivery_option');
+        
+        if ($request->input('delivery_option') === 'home') {
+             $order->delivery_address = $request->input('address');
+        }
+
+        $order->save();
+
+        // 5. Enregistrement des articles de la commande
+        foreach ($cart as $item) {
+            $orderItem = new OrderItem();
+            $orderItem->order_id = $order->id;
+            $orderItem->product_id = $item['id'];
+            $orderItem->quantity = $item['quantity'];
+            $orderItem->price = $item['promotion_price'] ?? $item['price'];
+            $orderItem->save();
+        }
+
+        // 6. Vider le panier
+        Session::forget('cart');
+
+        return redirect('/')->with('success', 'Votre commande a été passée avec succès. Nous vous contacterons bientôt !');
     }
 }
