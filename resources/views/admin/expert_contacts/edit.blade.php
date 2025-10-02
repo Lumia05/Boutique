@@ -1,20 +1,20 @@
 @extends('layouts.admin')
 
 @section('title', 'Modifier l\'Expert')
-@section('page-title', 'Modifier : ' . $expert->name)
+@section('page-title', 'Modifier : ' . $expertContact->name)
 
 @section('content')
 
     <div class="bg-white p-6 rounded-xl shadow-lg max-w-xl mx-auto">
         
-        <form action="{{ route('admin.expert_contacts.update', $expert) }}" method="POST">
+        <form action="{{ route('admin.expert_contacts.update', $expertContact) }}" method="POST">
             @csrf
             @method('PUT')
 
             <div class="mb-4">
                 <label for="name" class="block text-sm font-medium text-gray-700">Nom de l'Expert <span class="text-red-500">*</span></label>
                 <input type="text" name="name" id="name" required
-                    value="{{ old('name', $expert->name) }}"
+                    value="{{ old('name', $expertContact->name) }}"
                     class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 p-2"
                     placeholder="Ex: Jean Dupont"
                 >
@@ -24,7 +24,7 @@
             <div class="mb-4">
                 <label for="role" class="block text-sm font-medium text-gray-700">Rôle (Ex: Support Technique, Ventes)</label>
                 <input type="text" name="role" id="role"
-                    value="{{ old('role', $expert->role) }}"
+                    value="{{ old('role', $expertContact->role) }}"
                     class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 p-2"
                     placeholder="Ex: Responsable des Retours"
                 >
@@ -34,7 +34,7 @@
             <div class="mb-4">
                 <label for="phone" class="block text-sm font-medium text-gray-700">Numéro de Téléphone (Opt.)</label>
                 <input type="text" name="phone" id="phone"
-                    value="{{ old('phone', $expert->phone) }}"
+                    value="{{ old('phone', $expertContact->phone) }}"
                     class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 p-2"
                     placeholder="Ex: +237 670 123 456"
                 >
@@ -44,7 +44,7 @@
             <div class="mb-4">
                 <label for="whatsapp" class="block text-sm font-medium text-gray-700">Lien WhatsApp (Opt.)</label>
                 <input type="url" name="whatsapp" id="whatsapp"
-                    value="{{ old('whatsapp', $expert->whatsapp) }}"
+                    value="{{ old('whatsapp', $expertContact->whatsapp) }}"
                     class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 p-2"
                     placeholder="Ex: https://wa.me/237670123456"
                 >
@@ -55,7 +55,7 @@
                 <div class="mb-4">
                     <label for="sort_order" class="block text-sm font-medium text-gray-700">Ordre de Tri</label>
                     <input type="number" min="0" name="sort_order" id="sort_order"
-                        value="{{ old('sort_order', $expert->sort_order) }}"
+                        value="{{ old('sort_order', $expertContact->sort_order) }}"
                         class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 p-2"
                     >
                     @error('sort_order') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
@@ -63,7 +63,7 @@
 
                 <div class="flex items-center pt-6">
                     <input id="is_active" name="is_active" type="checkbox" value="1" 
-                        {{ old('is_active', $expert->is_active) ? 'checked' : '' }} 
+                        {{ old('is_active', $expertContact->is_active) ? 'checked' : '' }} 
                         class="h-5 w-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
                     >
                     <label for="is_active" class="ml-2 block text-sm font-medium text-gray-700">
