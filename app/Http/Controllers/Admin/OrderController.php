@@ -4,33 +4,33 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Orders; 
+use App\Models\Order; 
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
     /**
      * Affiche la liste des commandes (Index).
      */
-    public function index()
+    public function index(Request $request)
     {
-        // ... votre logique de pagination des commandes ...
-        $orders = Order::with('customer')->latest()->paginate(20);
-
-        // Simulation des données de statistiques pour le graphique (A REMPLACER)
-        $stats = [
-            'labels' => ['Jour 7', 'Jour 6', 'Jour 5', 'Jour 4', 'Jour 3', 'Hier', 'Aujourd\'hui'],
-            'submitted' => [15, 20, 18, 25, 30, 22, 28], // Commandes soumises
-            'completed' => [10, 15, 12, 18, 25, 19, 23], // Commandes complétées (validées)
-        ];
+        // Récupération du statut de filtre de la requête (ex: /admin/orders?status=pending)
+        $status = $request->get('status');
         
-        // Total des KPIs pour les cartes
-        $kpis = [
-            'total_submitted' => 150,
-            'total_completed' => 120,
-            'revenue_last_30_days' => 1250000, // F CFA
-        ];
+        $query = Order::with('customer')->latest();
 
-        return view('admin.orders.index', compact('orders', 'stats', 'kpis'));
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        $orders = $query->paginate(20);
+
+        // Calcul des totaux par statut pour les filtres du tableau de bord
+        $statusCounts = Order::select('status', DB::raw('count(*) as count'))
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        return view('admin.orders.index', compact('orders', 'statusCounts', 'status'));
     }
 
     /**
@@ -38,18 +38,49 @@ class OrderController extends Controller
      */
     public function show(Order $order)
     {
-        // Charge les relations nécessaires (client, produits)
-        $order->load('customer', 'items.product'); 
+        // Charge les relations nécessaires (client, articles, variantes des articles)
+        $order->load('customer', 'items.productVariant'); 
         
         return view('admin.orders.show', compact('order'));
     }
 
     /**
-     * Met à jour le statut d'une commande (UPDATE).
+     * CONFIRME la commande (passe de 'pending' à 'processing').
+     */
+    public function confirm(Order $order)
+    {
+        // Condition de sécurité : on ne confirme qu'une commande en attente
+        if ($order->status === 'pending') {
+            $order->status = 'processing';
+            $order->save();
+            return redirect()->route('admin.orders.index')->with('success', "Commande #{$order->id} confirmée et mise en traitement.");
+        }
+        
+        return redirect()->route('admin.orders.index')->with('error', "La commande #{$order->id} ne peut pas être confirmée (Statut actuel : {$order->status}).");
+    }
+    
+    /**
+     * ANNULE la commande.
+     */
+    public function cancel(Order $order)
+    {
+        // Condition de sécurité : on ne peut pas annuler une commande déjà terminée
+        if ($order->status !== 'completed' && $order->status !== 'cancelled') {
+            $order->status = 'cancelled';
+            $order->save();
+            return redirect()->route('admin.orders.index')->with('success', "Commande #{$order->id} annulée.");
+        }
+        
+        return redirect()->route('admin.orders.index')->with('error', "La commande #{$order->id} ne peut pas être annulée (Statut actuel : {$order->status}).");
+    }
+
+    /**
+     * Met à jour le statut d'une commande (UPDATE) - utilisé pour les changements manuels.
      */
     public function update(Request $request, Order $order)
     {
         $validated = $request->validate([
+            // Ajout des statuts 'processing' et 'shipped' (expédiée)
             'status' => ['required', 'string', 'in:pending,processing,shipped,completed,cancelled'],
         ]);
 
@@ -63,8 +94,11 @@ class OrderController extends Controller
      */
     public function destroy(Order $order)
     {
-        $order->delete();
+         // Optionnel : Ajouter une vérification pour n'autoriser la suppression que si 'cancelled'
+         // if ($order->status !== 'cancelled') { ... }
+         
+         $order->delete();
 
-        return redirect()->route('admin.orders.index')->with('success', 'La commande a été supprimée.');
+         return redirect()->route('admin.orders.index')->with('success', 'La commande a été supprimée.');
     }
 }

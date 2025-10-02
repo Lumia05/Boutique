@@ -1,174 +1,151 @@
 @extends('layouts.admin')
 
-@section('title', 'Tableau de Bord Commandes')
-@section('page-title', 'Statistiques et Gestion des Commandes')
+@section('title', 'Gestion des Commandes')
 
 @section('content')
+    <div class="space-y-8">
+        <header class="flex justify-between items-center pb-4 border-b border-gray-200">
+            <h1 class="text-3xl font-bold text-gray-900">Gestion des Commandes</h1>
+        </header>
 
-    {{-- ======================================================= --}}
-    {{-- 1. CARTES DE STATISTIQUES (KPIs) --}}
-    {{-- ======================================================= --}}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        
-        {{-- Carte 1: Commandes Soumises --}}
-        <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-indigo-500">
-            <p class="text-sm font-medium text-gray-500">Commandes Soumises (30 jours)</p>
-            <p class="text-3xl font-extrabold text-gray-900 mt-1">
-                {{ number_format($kpis['total_submitted'] ?? 0, 0, ',', ' ') }}
-            </p>
+        {{-- Messages de Session (Succès/Erreur) --}}
+        @if (session('success'))
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+                <span class="block sm:inline">{{ session('success') }}</span>
+            </div>
+        @endif
+        @if (session('error'))
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <span class="block sm:inline">{{ session('error') }}</span>
+            </div>
+        @endif
+
+        {{-- Barre de Filtre des Statuts --}}
+        <div class="bg-white p-4 rounded-xl shadow-md flex flex-wrap gap-3 text-sm font-medium">
+            @php
+                // Définition des libellés et couleurs des statuts
+                $statuses = [
+                    'all' => ['label' => 'Toutes', 'color' => 'gray'],
+                    'pending' => ['label' => 'En Attente', 'color' => 'red'],
+                    'processing' => ['label' => 'En Cours', 'color' => 'yellow'],
+                    'shipped' => ['label' => 'Expédiée', 'color' => 'blue'],
+                    'completed' => ['label' => 'Terminée', 'color' => 'green'],
+                    'cancelled' => ['label' => 'Annulée', 'color' => 'gray'],
+                ];
+                
+                // Calcul du total pour le filtre 'Toutes'
+                $totalOrders = $statusCounts->sum();
+            @endphp
+
+            <a href="{{ route('admin.orders.index') }}" 
+               class="px-3 py-1 rounded-full border 
+                      {{ !$status ? 'bg-indigo-600 text-white border-indigo-700' : 'text-gray-700 hover:bg-gray-100 border-gray-300' }}">
+                Toutes ({{ $totalOrders }})
+            </a>
+            
+            @foreach ($statuses as $key => $data)
+                @if ($key !== 'all' && $statusCounts->get($key, 0) > 0)
+                    @php
+                        $isActive = $status === $key;
+                        $baseColor = $data['color'];
+                        $bgColor = $isActive ? "bg-{$baseColor}-600 text-white border-{$baseColor}-700" : "bg-{$baseColor}-100 text-{$baseColor}-800 hover:bg-{$baseColor}-200 border-{$baseColor}-300";
+                    @endphp
+                    <a href="{{ route('admin.orders.index', ['status' => $key]) }}" 
+                       class="px-3 py-1 rounded-full border {{ $bgColor }}">
+                        {{ $data['label'] }} ({{ $statusCounts->get($key, 0) }})
+                    </a>
+                @endif
+            @endforeach
         </div>
-        
-        {{-- Carte 2: Commandes Validées --}}
-        <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-green-500">
-            <p class="text-sm font-medium text-gray-500">Commandes Validées (30 jours)</p>
-            <p class="text-3xl font-extrabold text-gray-900 mt-1">
-                {{ number_format($kpis['total_completed'] ?? 0, 0, ',', ' ') }}
-            </p>
-        </div>
-        
-        {{-- Carte 3: Revenu --}}
-        <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-red-500">
-            <p class="text-sm font-medium text-gray-500">Revenu (30 derniers jours)</p>
-            <p class="text-3xl font-extrabold text-gray-900 mt-1">
-                {{ number_format($kpis['revenue_last_30_days'] ?? 0, 0, ',', ' ') }} F CFA
-            </p>
-        </div>
 
-    </div>
-
-    {{-- ======================================================= --}}
-    {{-- 2. GRAPHIQUE DES COMMANDES (Soumises vs Validées) --}}
-    {{-- ======================================================= --}}
-    <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
-        <h3 class="text-xl font-semibold text-gray-800 mb-4 pb-3 border-b">
-            Performance des Commandes (7 derniers jours)
-        </h3>
-        <canvas id="orderChart" height="100"></canvas>
-    </div>
-
-
-    {{-- ======================================================= --}}
-    {{-- 3. LISTE DES COMMANDES --}}
-    {{-- ======================================================= --}}
-    <div class="p-4 bg-white rounded-xl shadow-lg border-t-4 border-gray-100">
-
-        <h3 class="text-xl font-semibold text-gray-800 mb-4 pb-3 border-b">
-            Commandes Récentes
-        </h3>
-
-        @if ($orders->isEmpty())
-            <p class="text-gray-500">Aucune commande n'a été enregistrée pour le moment.</p>
-        @else
-            <div class="overflow-x-auto">
+        {{-- Tableau des Commandes --}}
+        <div class="bg-white rounded-xl shadow-lg overflow-x-auto">
+            @if ($orders->isEmpty())
+                <p class="p-6 text-gray-500 text-center">Aucune commande n'a été trouvée pour ce statut.</p>
+            @else
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                            <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                ID Commande
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Client
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Date
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Total
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Statut
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                            </th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         @foreach ($orders as $order)
                             <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    #{{ $order->id }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <a href="{{ route('admin.customers.show', $order->customer) }}" class="text-indigo-600 hover:text-indigo-900 font-semibold">
-                                        {{ $order->customer->name ?? 'N/A' }}
-                                    </a>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{{ $order->id }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                    {{ $order->customer->name ?? 'Client Inconnu' }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     {{ $order->created_at->format('d/m/Y H:i') }}
                                 </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">
+                                    {{ number_format($order->total_price, 0, ',', ' ') }} F CFA
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                        @if($order->status == 'completed') bg-green-100 text-green-800
-                                        @elseif($order->status == 'pending') bg-yellow-100 text-yellow-800
-                                        @else bg-gray-100 text-gray-800 @endif">
-                                        {{ ucfirst($order->status) }}
+                                    @php
+                                        // Définition locale des couleurs pour la table
+                                        $color = $order->status == 'pending' ? 'red' : ($order->status == 'processing' ? 'yellow' : ($order->status == 'completed' ? 'green' : 'gray'));
+                                    @endphp
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-{{ $color }}-100 text-{{ $color }}-800">
+                                        {{ $statuses[$order->status]['label'] ?? ucfirst($order->status) }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">
-                                    {{ number_format($order->total_amount, 2, ',', ' ') }} F CFA
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <a href="{{ route('admin.orders.show', $order) }}" class="text-red-600 hover:text-red-900">
-                                        Détails
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end space-x-2">
+                                    
+                                    {{-- Action: Confirmer (si 'pending') --}}
+                                    @if ($order->status === 'pending')
+                                        <form action="{{ route('admin.orders.confirm', $order) }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="text-sm font-medium text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50 transition duration-150">
+                                                <i class="fas fa-check-circle mr-1"></i> Confirmer
+                                            </button>
+                                        </form>
+                                    @endif
+
+                                    {{-- Action: Annuler (si ni 'completed' ni 'cancelled') --}}
+                                    @if ($order->status !== 'completed' && $order->status !== 'cancelled')
+                                        <form action="{{ route('admin.orders.cancel', $order) }}" method="POST">
+                                            @csrf
+                                            <button type="submit" onclick="return confirm('Êtes-vous sûr de vouloir annuler la commande #{{ $order->id }} ?')"
+                                                    class="text-sm font-medium text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition duration-150">
+                                                <i class="fas fa-times-circle mr-1"></i> Annuler
+                                            </button>
+                                        </form>
+                                    @endif
+                                    
+                                    {{-- Action: Détails --}}
+                                    <a href="{{ route('admin.orders.show', $order) }}" class="text-sm font-medium text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50 transition duration-150">
+                                        <i class="fas fa-info-circle mr-1"></i> Détails
                                     </a>
                                 </td>
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
-            </div>
-
-            <div class="mt-4">
-                {{ $orders->links() }}
-            </div>
-        @endif
+                
+                {{-- Pagination --}}
+                <div class="p-4">
+                    {{ $orders->links() }}
+                </div>
+            @endif
+        </div>
     </div>
-
 @endsection
-
-{{-- ======================================================= --}}
-{{-- SCRIPTS POUR LE GRAPHIQUE (Chart.js) --}}
-{{-- ======================================================= --}}
-@push('scripts')
-    {{-- Assurez-vous d'inclure la librairie Chart.js dans votre layout admin --}}
-    {{-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> --}}
-
-    <script>
-        // Récupération des données passées par Laravel
-        const stats = @json($stats); 
-        
-        const ctx = document.getElementById('orderChart').getContext('2d');
-        
-        const orderChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: stats.labels, // Jours de la semaine
-                datasets: [
-                    {
-                        label: 'Commandes Soumises',
-                        data: stats.submitted,
-                        borderColor: '#4f46e5', // Indigo-600
-                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                        tension: 0.3,
-                        fill: true,
-                    },
-                    {
-                        label: 'Commandes Validées',
-                        data: stats.completed,
-                        borderColor: '#10b981', // Green-600
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        tension: 0.3,
-                        fill: true,
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        suggestedMax: Math.max(...stats.submitted) + 5 // Ajuste la hauteur max
-                    }
-                },
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                    }
-                }
-            }
-        });
-    </script>
-@endpush

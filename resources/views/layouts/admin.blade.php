@@ -59,6 +59,12 @@
             
             <a href="{{ route('admin.expert_contacts.index') }}" class="menu-item @if(Request::is('admin/expert_contacts')) bg-gray-700 @endif">
                 Experts</a>
+            
+            <h3 class="text-xs font-semibold text-gray-500 uppercase pt-4 pb-1 px-4">Statistiques</h3>
+            
+            <a href="{{ route('admin.reports.index') }}" class="menu-item @if(Request::is('admin/reports*')) bg-gray-700 @endif">
+                Rapports & Stats
+            </a>
             </nav>
             <style>
                 .menu-item {

@@ -26,6 +26,7 @@ use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ExpertContactController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\CustomerController;
+use App\Http\Controllers\Admin\ReportsController;
 // ... (autres contrôleurs Admin)
 
 
@@ -116,10 +117,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::resource('orders', OrderController::class)
         ->only(['index', 'show', 'update', 'destroy'])
         ->names('orders');
-        
+     Route::post('orders/{order}/confirm', [OrderController::class, 'confirm'])->name('orders.confirm');
+     Route::post('orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
     // GESTION DES CLIENTS
     Route::resource('customers', CustomerController::class) // Changement d'URI
         ->only(['index', 'show', 'update'])
         ->names('customers'); // Changement de nommage
+    
+    //Rapports et Stats
+    Route::get('reports', [ReportsController::class, 'index'])->name('reports.index');
+    Route::post('reports/generate', [ReportsController::class, 'generate'])->name('reports.generate');
     // ... (autres Route::resource futures)
 });

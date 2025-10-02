@@ -1,121 +1,116 @@
 @extends('layouts.admin')
 
-@section('title', 'Ajouter un Expert')
-@section('page-title', 'Enregistrer un Nouveau Contact Spécialisé')
+@section('title', 'Aperçu Général')
 
 @section('content')
+    <style>
+        .card-shadow {
+            transition: all 0.3s ease;
+        }
+        .card-shadow:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+    </style>
 
-    <div class="max-w-xl mx-auto">
-        
-        {{-- Conteneur Principal : Blanc, centré, et professionnel --}}
-        <div class="p-8 bg-white rounded-xl shadow-lg border-t-4 border-red-600">
-            
-            <h2 class="text-2xl font-bold text-gray-800 mb-6 pb-4 border-b">
-                Ajouter un Expert
-            </h2>
+    <header class="mb-8">
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-2">Tableau de Bord Administrateur</h1>
+        <p class="text-gray-600">Accès rapide aux fonctionnalités clés de la boutique.</p>
+    </header>
 
-            <form action="{{ route('admin.expert_contacts.store') }}" method="POST">
-                @csrf
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
 
-                <div class="space-y-6">
-                    
-                    {{-- 1. DÉTAILS DE BASE (Nom et Rôle OBLIGATOIRES) --}}
-                    
-                    {{-- Nom Complet --}}
+        <!-- Carte 1: Commandes -->
+        <a href="{{ route('admin.orders.index') ?? '#' }}" class="block">
+            <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-red-500 card-shadow">
+                <div class="flex items-center">
+                    <i class="fas fa-shopping-bag text-3xl text-red-500 mr-4"></i>
                     <div>
-                        <label for="name" class="block text-base font-medium text-gray-700">
-                            Nom de l'Expert <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" name="name" id="name" required
-                            value="{{ old('name') }}"
-                            placeholder="Nom et prénom de l'expert"
-                            class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm p-3 focus:ring-red-500 focus:border-red-500"
-                        >
-                        @error('name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        <p class="text-xl font-semibold text-gray-900">Gestion des Commandes</p>
+                        <p class="text-sm text-gray-500">Suivi et traitement des commandes clients.</p>
                     </div>
-                    
-                    {{-- Rôle --}}
-                    <div>
-                        <label for="role" class="block text-base font-medium text-gray-700">
-                            Rôle sur le Site <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" name="role" id="role" required
-                            value="{{ old('role') }}"
-                            placeholder="Ex: Responsable des Ventes / Support Technique"
-                            class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm p-3 focus:ring-red-500 focus:border-red-500"
-                        >
-                        @error('role') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                    </div>
-                    
-                    {{-- --- Séparateur --- --}}
-                    <div class="pt-4 border-t border-gray-100">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Coordonnées (Optionnel)</h3>
-                    </div>
-                    
-                    {{-- Numéro de Téléphone --}}
-                    <div>
-                        <label for="phone" class="block text-base font-medium text-gray-700">
-                            Téléphone
-                        </label>
-                        <input type="text" name="phone" id="phone"
-                            value="{{ old('phone') }}"
-                            placeholder="+237 690 00 00 00"
-                            class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500"
-                        >
-                        @error('phone') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                    </div>
-                    
-                    {{-- Lien WhatsApp --}}
-                    <div>
-                        <label for="whatsapp" class="block text-base font-medium text-gray-700">
-                            Lien WhatsApp (URL)
-                        </label>
-                        <input type="url" name="whatsapp" id="whatsapp"
-                            value="{{ old('whatsapp') }}"
-                            placeholder="Ex: https://wa.me/xxxxxxxxxxx"
-                            class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm p-3 focus:ring-green-600 focus:border-green-600"
-                        >
-                        @error('whatsapp') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                    </div>
-
-                    {{-- --- Séparateur --- --}}
-                    <div class="pt-4 border-t border-gray-100">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Paramètres d'Affichage</h3>
-                    </div>
-                    
-                    {{-- Ordre de Tri --}}
-                    <div>
-                        <label for="sort_order" class="block text-base font-medium text-gray-700">
-                            Ordre de Tri
-                        </label>
-                        <input type="number" name="sort_order" id="sort_order" value="{{ old('sort_order', 0) }}"
-                            class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500">
-                        @error('sort_order') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                    </div>
-                    
-                    {{-- Visibilité --}}
-                    <div class="flex items-center pt-2">
-                        <input id="is_active" name="is_active" type="checkbox" checked
-                            class="h-6 w-6 text-red-600 border-gray-300 rounded focus:ring-red-500">
-                        <label for="is_active" class="ml-3 block text-base font-medium text-gray-700">
-                            Expert **Actif** et **Visible**
-                        </label>
-                    </div>
-
-                    {{-- Boutons d'Action --}}
-                    <div class="pt-6 border-t border-gray-200 flex justify-end space-x-3">
-                        <a href="{{ route('admin.settings.index') }}" 
-                            class="py-3 px-6 border border-gray-300 text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 shadow-sm transition duration-150">
-                            Annuler
-                        </a>
-                        <button type="submit" class="py-3 px-6 border border-transparent text-base font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-150">
-                            Enregistrer l'Expert
-                        </button>
-                    </div>
-
                 </div>
-            </form>
-        </div>
-    </div>
+            </div>
+        </a>
 
+        <!-- Carte 2: Gestion des Produits (Stocks & Variantes) -->
+        <a href="{{ route('admin.products.index') ?? '#' }}" class="block">
+            <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-blue-500 card-shadow">
+                <div class="flex items-center">
+                    <i class="fas fa-cubes text-3xl text-blue-500 mr-4"></i>
+                    <div>
+                        <p class="text-xl font-semibold text-gray-900">Produits & Stocks</p>
+                        <p class="text-sm text-gray-500">Ajouter, modifier les produits et gérer les inventaires.</p>
+                    </div>
+                </div>
+            </div>
+        </a>
+
+        <!-- Carte 3: Catégories -->
+        <a href="{{ route('admin.categories.index') ?? '#' }}" class="block">
+            <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-green-500 card-shadow">
+                <div class="flex items-center">
+                    <i class="fas fa-layer-group text-3xl text-green-500 mr-4"></i>
+                    <div>
+                        <p class="text-xl font-semibold text-gray-900">Gestion des Catégories</p>
+                        <p class="text-sm text-gray-500">Organiser la structure du catalogue.</p>
+                    </div>
+                </div>
+            </div>
+        </a>
+
+        
+        <!-- Carte 5: Clients -->
+        <a href="{{ route('admin.customers.index') ?? '#' }}" class="block">
+            <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-purple-500 card-shadow">
+                <div class="flex items-center">
+                    <i class="fas fa-user-tag text-3xl text-purple-500 mr-4"></i>
+                    <div>
+                        <p class="text-xl font-semibold text-gray-900">Gestion des Clients</p>
+                        <p class="text-sm text-gray-500">Consulter et gérer les informations des acheteurs.</p>
+                    </div>
+                </div>
+            </div>
+        </a>
+
+        <!-- Carte 6: Experts (Vendeurs/Partenaires) -->
+        <a href="{{ route('admin.expert_contacts.index') ?? '#' }}" class="block">
+            <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-pink-500 card-shadow">
+                <div class="flex items-center">
+                    <i class="fas fa-handshake text-3xl text-pink-500 mr-4"></i>
+                    <div>
+                        <p class="text-xl font-semibold text-gray-900">Experts de la Boutique</p>
+                        <p class="text-sm text-gray-500">Gestion des vendeurs ou partenaires externes.</p>
+                    </div>
+                </div>
+            </div>
+        </a>
+        
+        <!-- Carte 7: Paramètres Généraux -->
+        <a href="{{ route('admin.settings.index') ?? '#' }}" class="block">
+            <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-gray-500 card-shadow">
+                <div class="flex items-center">
+                    <i class="fas fa-cog text-3xl text-gray-500 mr-4"></i>
+                    <div>
+                        <p class="text-xl font-semibold text-gray-900">Configuration Générale</p>
+                        <p class="text-sm text-gray-500">Modifier le nom de la boutique, les frais, etc.</p>
+                    </div>
+                </div>
+            </div>
+        </a>
+
+        <!-- Carte 8 : Statistiques/Rapports (Idée supplémentaire) -->
+         <a href="{{ route('admin.reports.index') ?? '#' }}" class="block">
+            <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-cyan-500 card-shadow">
+                <div class="flex items-center">
+                    <i class="fas fa-chart-line text-3xl text-cyan-500 mr-4"></i>
+                    <div>
+                        <p class="text-xl font-semibold text-gray-900">Statistiques & Rapports</p>
+                        <p class="text-sm text-gray-500">Vue d'ensemble des ventes et tendances.</p>
+                    </div>
+                </div>
+            </div>
+        </a>
+
+    </section>
 @endsection
