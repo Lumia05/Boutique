@@ -25,7 +25,7 @@ class CustomerController extends Controller
     public function show(Customer $customer)
     {
         // Charge l'historique des commandes du client
-        $customer->load('orders');
+        $customer->load('order');
         
         return view('admin.customers.show', compact('customer'));
     }
