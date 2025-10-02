@@ -52,16 +52,16 @@ Route::get('/produits/{product}', [ProductsController::class, 'show'])->name('pr
 
 Route::get('/panier', [CartController::class, 'index'])->name('cart.index');
 Route::post('/panier/ajouter', [CartController::class, 'add'])->name('cart.add');
-Route::post('/panier/retirer', [CartController::class, 'remove'])->name('cart.remove');
-Route::post('/panier/vider', [CartController::class, 'clear'])->name('cart.clear');
-Route::put('/panier/maj/{variantId}', [CartController::class, 'update'])->name('cart.update');
+Route::get('/panier/retirer', [CartController::class, 'remove'])->name('cart.remove');
+Route::get('/panier/vider', [CartController::class, 'clear'])->name('cart.clear');
+
 
 // Route DELETE pour retirer un article du panier
 Route::delete('/panier/retirer/{variantId}', [CartController::class, 'remove'])->name('cart.remove');
 
 // GESTION DU CHECKOUT (Passage à la caisse)
-Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
-Route::post('/checkout/commande', [CheckoutController::class, 'store'])->name('checkout.store');
+Route::get('/checkout', [CartController::class, 'indexCheckout'])->name('checkout.index');
+Route::post('/checkout/commande', [CartController::class, 'storeCheckout'])->name('checkout.store');
 
 /*
 |--------------------------------------------------------------------------
