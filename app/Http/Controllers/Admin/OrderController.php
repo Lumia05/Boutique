@@ -38,8 +38,8 @@ class OrderController extends Controller
      */
     public function show(Order $order)
     {
-        // Charge les relations nécessaires (client, articles, variantes des articles)
-        $order->load('customer', 'items.productVariant'); 
+        // CORRECTION : Utilisation de 'orderItems.variant' car la relation est nommée 'orderItems' dans le modèle Order.
+        $order->load('customer', 'orderItems.variant'); 
         
         return view('admin.orders.show', compact('order'));
     }
@@ -94,11 +94,11 @@ class OrderController extends Controller
      */
     public function destroy(Order $order)
     {
-         // Optionnel : Ajouter une vérification pour n'autoriser la suppression que si 'cancelled'
-         // if ($order->status !== 'cancelled') { ... }
-         
-         $order->delete();
+        // Optionnel : Ajouter une vérification pour n'autoriser la suppression que si 'cancelled'
+        // if ($order->status !== 'cancelled') { ... }
+        
+        $order->delete();
 
-         return redirect()->route('admin.orders.index')->with('success', 'La commande a été supprimée.');
+        return redirect()->route('admin.orders.index')->with('success', 'La commande a été supprimée.');
     }
 }
